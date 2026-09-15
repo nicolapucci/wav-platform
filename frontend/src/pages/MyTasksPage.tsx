@@ -48,12 +48,15 @@ export default function MyTasksPage() {
     return () => clearTimeout(timeout);
   }, [search]);
 
-  // sottoscrizione realtime: questa pagina non è legata a una singola risorsa,
-  // quindi si sottoscrive al canale "my_tasks" (evt:org:{id}:tasks lato server,
-  // vedi architettura.md §6.3) e ricarica la lista quando arriva un evento.
+  // sottoscrizione realtime: pagina "lista" (non ancorata a una singola task),
+  // quindi si sottoscrive al canale generico evt:tasks (ogni evento su
+  // qualunque task, vedi architettura.md §6.1) e ricarica la lista quando ne
+  // arriva uno. Alla navigazione verso il dettaglio di una task specifica
+  // questa pagina si smonta (l'effect fa unsubscribe) e TaskDetailPage si
+  // iscrive invece al canale specifico di quella task.
   useEffect(() => {
     realtimeSocket.connect();
-    realtimeSocket.subscribe("my_tasks");
+    realtimeSocket.subscribe("tasks");
 
     const unsubscribe = realtimeSocket.onMessage((message) => {
       if (message.type === "task.created" || message.type === "task.updated" || message.type === "task.deleted") {
@@ -63,7 +66,7 @@ export default function MyTasksPage() {
 
     return () => {
       unsubscribe();
-      realtimeSocket.unsubscribe("my_tasks");
+      realtimeSocket.unsubscribe("tasks");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -362,6 +362,8 @@ Tutti i servizi backend condividono un package Python interno (es. `wav-core`) c
 
 Un canale per risorsa: `evt:task:{id}`, `evt:layer:{id}`, `evt:board:{board_id}` (per riordini kanban), `evt:project:{id}` (per creazione/cancellazione layer figli, membership, ecc.).
 
+Ogni mutazione pubblicata tramite `publish_resource_event` va **anche** su un canale generico "a tipo", senza id (`evt:{tipo}s`, es. `evt:tasks`): chi vuole essere avvisato di ogni evento su risorse di un certo tipo, senza ancorarsi a una singola risorsa, sottoscrive quello (`{"action":"subscribe","resource":"tasks"}`, senza `id`). È un meccanismo generico e non filtrato per visibilità: diverso da `evt:org:{id}:tasks` (§6.3), che resta lo strumento giusto quando serve rispettare i permessi di chi ascolta.
+
 ### 6.2 Ciclo di vita
 
 1. Client apre connessione WSS con JWT (query param o primo messaggio).

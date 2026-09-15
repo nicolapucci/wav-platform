@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { apiFetch } from "../api/client";
 import KanbanBoard, { KanbanColumn, KanbanTask } from "../components/KanbanBoard";
+import { realtimeSocket } from "../ws/socket";
 
 type Organization = { id: string; name: string; slug: string };
 type Project = { id: string; name: string; description: string | null };
@@ -98,6 +99,28 @@ export default function KanbanViewPage() {
 
   useEffect(() => {
     loadBoard(filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(filter)]);
+
+  // pagina "lista" (task di più progetti, non ancorata a una task specifica):
+  // sottoscrive il canale generico evt:tasks (architettura.md §6.1) e ricarica
+  // la board quando arriva un evento. Rifatta ad ogni cambio filtro solo per
+  // tenere la closure di loadBoard aggiornata sul filtro corrente - il canale
+  // sottoscritto è sempre lo stesso, "tasks".
+  useEffect(() => {
+    realtimeSocket.connect();
+    realtimeSocket.subscribe("tasks");
+
+    const unsubscribe = realtimeSocket.onMessage((message) => {
+      if (message.type === "task.created" || message.type === "task.updated" || message.type === "task.deleted") {
+        loadBoard(filter);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      realtimeSocket.unsubscribe("tasks");
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(filter)]);
 

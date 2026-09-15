@@ -7,6 +7,7 @@ import ColumnManager from "../components/ColumnManager";
 import KanbanBoard, { KanbanColumn, KanbanTask } from "../components/KanbanBoard";
 import PermissionsPanel from "../components/PermissionsPanel";
 import TagManager from "../components/TagManager";
+import { realtimeSocket } from "../ws/socket";
 
 type Project = { id: string; organization_id: string; name: string; description: string | null; prefix: string };
 type Layer = { id: string; parent_layer_id: string | null; name: string; description: string | null };
@@ -77,6 +78,29 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  // la tab Struttura mostra le task del progetto (una kanban per layer): finché
+  // questa pagina resta montata si sottoscrive al canale generico evt:tasks
+  // (architettura.md §6.1) e ricarica tutto quando arriva un evento su una task
+  // qualsiasi. Se l'utente apre il dettaglio di una task specifica questa
+  // pagina si smonta (unsubscribe) e TaskDetailPage si iscrive invece al
+  // canale specifico di quella task.
+  useEffect(() => {
+    realtimeSocket.connect();
+    realtimeSocket.subscribe("tasks");
+
+    const unsubscribe = realtimeSocket.onMessage((message) => {
+      if (message.type === "task.created" || message.type === "task.updated" || message.type === "task.deleted") {
+        loadAll();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      realtimeSocket.unsubscribe("tasks");
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 

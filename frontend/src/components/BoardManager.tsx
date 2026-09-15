@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiFetch } from "../api/client";
+import { realtimeSocket } from "../ws/socket";
 import KanbanBoard, { KanbanColumn } from "./KanbanBoard";
 import StatusPieChart from "./StatusPieChart";
 
@@ -92,6 +93,27 @@ export default function BoardManager({
 
   useEffect(() => {
     loadFilteredData(currentFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(currentFilter)]);
+
+  // la dashboard è un'altra "lista" di task (filtrata), montata solo finché la
+  // tab Dashboard è attiva: sottoscrive il canale generico evt:tasks
+  // (architettura.md §6.1) mentre è visualizzata, si disiscrive smontandosi
+  // (cambio tab o uscita dalla pagina progetto).
+  useEffect(() => {
+    realtimeSocket.connect();
+    realtimeSocket.subscribe("tasks");
+
+    const unsubscribe = realtimeSocket.onMessage((message) => {
+      if (message.type === "task.created" || message.type === "task.updated" || message.type === "task.deleted") {
+        loadFilteredData(currentFilter);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      realtimeSocket.unsubscribe("tasks");
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(currentFilter)]);
 
