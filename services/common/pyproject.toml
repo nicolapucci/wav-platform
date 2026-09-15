@@ -1,0 +1,19 @@
+[project]
+name = "wav-core"
+version = "0.1.0"
+description = "Libreria condivisa tra i servizi WAV: config, db, redis, sicurezza, permessi"
+requires-python = ">=3.12"
+dependencies = [
+  "psycopg[binary,pool]>=3.1",
+  "redis>=5.0",
+  "pyjwt>=2.8",
+  "passlib[argon2]>=1.7",
+  "pydantic-settings>=2.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["wav_core"]

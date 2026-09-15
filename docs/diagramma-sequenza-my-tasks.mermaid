@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant C as Utente C (pagina "Le mie task")
+    participant WSGW as ws-gateway (pod Y)
+    participant API as api-service
+    participant PG as PostgreSQL
+    participant R as Redis (Pub/Sub)
+    participant Q as Redis (Streams)
+    participant W as worker
+
+    C->>WSGW: WSS connect (JWT)
+    C->>WSGW: subscribe(my_tasks)
+    WSGW->>WSGW: risolve organizzazioni dell'utente
+    WSGW->>R: SUBSCRIBE evt:org:{org_id}:tasks
+    WSGW->>R: SUBSCRIBE evt:user:{user_id}:notifications
+
+    Note over API,PG: un altro utente assegna la task 123 a C e lo menziona in un commento
+    API->>PG: UPDATE tasks / INSERT comment_mentions
+    API->>R: PUBLISH evt:org:{org_id}:tasks {task.updated, task_id:123}
+    API->>Q: XADD stream:jobs {type: notification, notification_type: mention, recipient_ids:[C]}
+
+    R-->>WSGW: evento su evt:org:{org_id}:tasks
+    WSGW->>WSGW: verifica permesso di C sulla task 123 (cache)
+    WSGW-->>C: push {task 123 updated} (lista si aggiorna)
+
+    Q-->>W: XREADGROUP consuma il job notification
+    W->>PG: INSERT INTO notifications (user_id=C, type=mention, ...)
+    W->>R: PUBLISH evt:user:{C}:notifications {notification.created}
+    R-->>WSGW: evento su evt:user:{C}:notifications
+    WSGW-->>C: push {nuova notifica} (badge si aggiorna)

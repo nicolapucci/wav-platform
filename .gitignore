@@ -1,0 +1,18 @@
+# Segreti e configurazione locale (vedi .env.example per il template)
+.env
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Override locali di docker-compose
+docker-compose.override.yml
+
+# Log
+*.log

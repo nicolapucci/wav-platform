@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant A as Utente A (editor)
+    participant B as Utente B (sta guardando la task)
+    participant WSGW as ws-gateway (pod X)
+    participant API as api-service
+    participant PG as PostgreSQL
+    participant R as Redis (Pub/Sub)
+    participant Q as Redis (Streams)
+
+    B->>WSGW: WSS connect (JWT)
+    B->>WSGW: subscribe(task:123)
+    WSGW->>WSGW: verifica permesso (cache o query)
+    WSGW->>R: SUBSCRIBE evt:task:123
+
+    A->>API: PATCH /tasks/123 {status: done}
+    API->>PG: UPDATE tasks SET status = ...
+    PG-->>API: OK
+    API->>R: PUBLISH evt:task:123 {task.updated, payload}
+    API->>Q: XADD stream:jobs {audit, task, updated}
+    API-->>A: 200 OK
+
+    R-->>WSGW: messaggio su evt:task:123
+    WSGW-->>B: push {task 123 updated}
+
+    Q-->>Q: worker N consuma via XREADGROUP
+    Q-->>Q: worker scrive audit_logs + XACK

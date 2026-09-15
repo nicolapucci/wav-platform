@@ -1,0 +1,64 @@
+flowchart TB
+    RC["React SPA"]
+
+    subgraph Edge["Edge"]
+        ING["nginx / Ingress\n(routing + WS upgrade)"]
+    end
+
+    AUTH["auth-service\n(JWT + OAuth2)"]
+
+    subgraph APIPool["api-service (pool)"]
+        API1["pod 1"]
+        API2["pod 2"]
+        APIN["pod N"]
+    end
+
+    subgraph WSPool["ws-gateway (pool)"]
+        WS1["pod 1"]
+        WS2["pod 2"]
+        WSN["pod N"]
+    end
+
+    subgraph Workers["worker-service (consumer group)"]
+        W1["worker 1"]
+        W2["worker 2"]
+        WN["worker N"]
+    end
+
+    PG[("PostgreSQL\n+ ltree")]
+    RCACHE[("Redis\ncache permessi")]
+    RPUBSUB[("Redis Pub/Sub\nevt:*")]
+    RQUEUE[("Redis Streams\nstream:jobs")]
+    S3[("Object Storage\nMinIO / S3")]
+
+    RC -- "HTTPS REST" --> ING
+    RC -- "WSS" --> ING
+    RC -- "upload/download diretto (presigned URL)" --> S3
+    API1 -- "genera presigned URL" --> S3
+
+    ING --> AUTH
+    ING --> API1
+    ING --> API2
+    ING --> APIN
+    ING --> WS1
+    ING --> WS2
+    ING --> WSN
+
+    AUTH --> PG
+    AUTH --> RCACHE
+
+    API1 --> PG
+    API2 --> PG
+    APIN --> PG
+    API1 -. "cache lookup" .-> RCACHE
+    API1 -- "PUBLISH evt:*" --> RPUBSUB
+    API1 -- "XADD job" --> RQUEUE
+
+    WS1 -- "SUBSCRIBE evt:*" --> RPUBSUB
+    WS2 -- "SUBSCRIBE evt:*" --> RPUBSUB
+    WSN -- "SUBSCRIBE evt:*" --> RPUBSUB
+
+    W1 -- "XREADGROUP" --> RQUEUE
+    W2 -- "XREADGROUP" --> RQUEUE
+    WN -- "XREADGROUP" --> RQUEUE
+    W1 --> PG

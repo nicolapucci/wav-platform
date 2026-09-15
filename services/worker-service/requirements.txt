@@ -1,0 +1,2 @@
+# Il worker usa solo le dipendenze già dichiarate in wav-core (psycopg, redis).
+# Nessun requirement aggiuntivo per ora.
