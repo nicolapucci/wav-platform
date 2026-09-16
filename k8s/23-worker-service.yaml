@@ -1,0 +1,28 @@
+# Solo Deployment, nessun Service: e' un consumer in background (nessun
+# server HTTP, vedi CMD del Dockerfile), quindi niente da esporre ne' da
+# controllare con probe HTTP - stessa forma che aveva in docker-compose
+# (nessuna porta pubblicata, nessun healthcheck).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-service
+  namespace: wav-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker-service
+  template:
+    metadata:
+      labels:
+        app: worker-service
+    spec:
+      containers:
+        - name: worker-service
+          image: wav-platform-worker-service:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets

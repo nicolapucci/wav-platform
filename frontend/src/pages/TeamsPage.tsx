@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiFetch } from "../api/client";
+import InfoTooltip from "../components/InfoTooltip";
 
 type Organization = { id: string; name: string };
 type Team = { id: string; name: string };
@@ -46,8 +47,10 @@ export default function TeamsPage() {
   return (
     <>
       <div className="page-header">
-        <h1>Gruppi</h1>
-        <p>Assegna un permesso a un gruppo invece che a ogni persona singolarmente.</p>
+        <h1>
+          Gruppi
+          <InfoTooltip text="Assegna un permesso a un gruppo invece che a ogni persona singolarmente." />
+        </h1>
       </div>
 
       {loading && <p>Caricamento...</p>}

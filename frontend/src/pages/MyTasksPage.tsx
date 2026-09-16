@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiFetch } from "../api/client";
+import InfoTooltip from "../components/InfoTooltip";
 import { realtimeSocket } from "../ws/socket";
 
 type Tag = { id: string; name: string; color: string | null };
@@ -74,8 +75,10 @@ export default function MyTasksPage() {
   return (
     <>
       <div className="page-header">
-        <h1>Le mie task</h1>
-        <p>Tutte le task su cui hai almeno il permesso di lettura.</p>
+        <h1>
+          Le mie task
+          <InfoTooltip text="Tutte le task su cui hai almeno il permesso di lettura." />
+        </h1>
       </div>
 
       <input

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { apiFetch } from "../api/client";
+import InfoTooltip from "../components/InfoTooltip";
 import { realtimeSocket } from "../ws/socket";
 
 type Task = {
@@ -376,8 +377,8 @@ export default function TaskDetailPage() {
       <div className="page-header">
         <h1>
           <span className="task-detail-readable-id">{task.readable_id}</span> {task.title}
+          <InfoTooltip text={`Il tuo ruolo qui: ${task.viewer_role ?? "nessuno"}`} />
         </h1>
-        <p>Il tuo ruolo qui: {task.viewer_role ?? "nessuno"}</p>
       </div>
 
       <div className="task-detail-grid">

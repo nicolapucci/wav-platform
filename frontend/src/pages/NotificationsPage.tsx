@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+import InfoTooltip from "../components/InfoTooltip";
 import { NotificationItem, useNotifications } from "../context/NotificationsContext";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -39,8 +40,10 @@ export default function NotificationsPage() {
   return (
     <>
       <div className="page-header">
-        <h1>Notifiche</h1>
-        <p>{unreadCount > 0 ? `${unreadCount} da leggere` : "Tutto letto"}</p>
+        <h1>
+          Notifiche
+          <InfoTooltip text={unreadCount > 0 ? `${unreadCount} da leggere` : "Tutto letto"} />
+        </h1>
       </div>
 
       {unreadCount > 0 && (

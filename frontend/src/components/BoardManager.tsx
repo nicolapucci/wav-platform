@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
 import { realtimeSocket } from "../ws/socket";
 import KanbanBoard, { KanbanColumn } from "./KanbanBoard";
+import MultiSelect, { MultiSelectOption } from "./MultiSelect";
 import StatusPieChart from "./StatusPieChart";
 
 type Layer = { id: string; name: string };
@@ -58,12 +59,10 @@ export default function BoardManager({
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
-  const [selectedLayerIds, setSelectedLayerIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [assigneeQuery, setAssigneeQuery] = useState("");
-  const [assigneeResults, setAssigneeResults] = useState<UserResult[]>([]);
-  const [selectedAssignees, setSelectedAssignees] = useState<UserResult[]>([]);
+  const [selectedLayers, setSelectedLayers] = useState<MultiSelectOption[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<MultiSelectOption[]>([]);
+  const [selectedTags, setSelectedTags] = useState<MultiSelectOption[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<MultiSelectOption[]>([]);
 
   async function loadBoards() {
     const res = await apiFetch(`/api/boards?project_id=${projectId}`);
@@ -117,17 +116,12 @@ export default function BoardManager({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(currentFilter)]);
 
-  useEffect(() => {
-    if (assigneeQuery.length < 2) {
-      setAssigneeResults([]);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(assigneeQuery)}`);
-      if (res.ok) setAssigneeResults(await res.json());
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [assigneeQuery]);
+  async function searchUsers(query: string): Promise<MultiSelectOption[]> {
+    const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    const users: UserResult[] = await res.json();
+    return users.map((u) => ({ id: u.id, label: `${u.display_name} (${u.email})` }));
+  }
 
   function handleSelectDefault() {
     setCurrentFilter(EMPTY_FILTER);
@@ -151,10 +145,10 @@ export default function BoardManager({
   async function handleCreateBoard() {
     if (!name.trim()) return;
     const task_filter: TaskFilter = {
-      layer_ids: selectedLayerIds,
-      assignee_ids: selectedAssignees.map((u) => u.id),
-      team_ids: selectedTeamIds,
-      tag_ids: selectedTagIds,
+      layer_ids: selectedLayers.map((o) => o.id),
+      assignee_ids: selectedAssignees.map((o) => o.id),
+      team_ids: selectedTeams.map((o) => o.id),
+      tag_ids: selectedTags.map((o) => o.id),
     };
     const res = await apiFetch("/api/boards", {
       method: "POST",
@@ -162,9 +156,9 @@ export default function BoardManager({
     });
     if (res.ok) {
       setName("");
-      setSelectedLayerIds([]);
-      setSelectedTeamIds([]);
-      setSelectedTagIds([]);
+      setSelectedLayers([]);
+      setSelectedTeams([]);
+      setSelectedTags([]);
       setSelectedAssignees([]);
       setShowForm(false);
       loadBoards();
@@ -198,92 +192,37 @@ export default function BoardManager({
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="es. Task del team QA" />
           </div>
 
-          <div className="field">
-            <label>Layer (opzionale, include i sotto-layer)</label>
-            <select
-              multiple
-              value={selectedLayerIds}
-              onChange={(e) => setSelectedLayerIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-            >
-              {layers.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <MultiSelect
+            label="Layer (opzionale, include i sotto-layer)"
+            placeholder="Tutti i layer"
+            selected={selectedLayers}
+            onChange={setSelectedLayers}
+            options={layers.map((l) => ({ id: l.id, label: l.name }))}
+          />
 
-          <div className="field">
-            <label>Gruppo (opzionale)</label>
-            <select
-              multiple
-              value={selectedTeamIds}
-              onChange={(e) => setSelectedTeamIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-            >
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <MultiSelect
+            label="Gruppo (opzionale)"
+            placeholder="Tutti i gruppi"
+            selected={selectedTeams}
+            onChange={setSelectedTeams}
+            options={teams.map((t) => ({ id: t.id, label: t.name }))}
+          />
 
-          <div className="field">
-            <label>Tag (opzionale)</label>
-            <select
-              multiple
-              value={selectedTagIds}
-              onChange={(e) => setSelectedTagIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-            >
-              {projectTags.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <MultiSelect
+            label="Tag (opzionale)"
+            placeholder="Tutti i tag"
+            selected={selectedTags}
+            onChange={setSelectedTags}
+            options={projectTags.map((t) => ({ id: t.id, label: t.name }))}
+          />
 
-          <div className="field">
-            <label>Assegnatari specifici (opzionale)</label>
-            {selectedAssignees.length > 0 && (
-              <div className="chip-list">
-                {selectedAssignees.map((u) => (
-                  <span key={u.id} className="chip">
-                    {u.display_name}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedAssignees((prev) => prev.filter((x) => x.id !== u.id))}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            <input
-              placeholder="Cerca utente per email o nome..."
-              value={assigneeQuery}
-              onChange={(e) => setAssigneeQuery(e.target.value)}
-            />
-            {assigneeResults.length > 0 && (
-              <ul className="permissions-suggestions">
-                {assigneeResults.map((u) => (
-                  <li key={u.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedAssignees((prev) => (prev.some((x) => x.id === u.id) ? prev : [...prev, u]));
-                        setAssigneeQuery("");
-                        setAssigneeResults([]);
-                      }}
-                    >
-                      {u.display_name} ({u.email})
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <MultiSelect
+            label="Assegnatari specifici (opzionale)"
+            placeholder="Cerca utente per email o nome..."
+            selected={selectedAssignees}
+            onChange={setSelectedAssignees}
+            onSearch={searchUsers}
+          />
 
           <button type="button" className="btn-primary" onClick={handleCreateBoard}>
             Crea board

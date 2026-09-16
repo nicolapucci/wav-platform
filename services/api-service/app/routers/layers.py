@@ -20,23 +20,20 @@ def _ltree_label(uuid_str: str) -> str:
     return uuid_str.replace("-", "")
 
 
-@router.post("")
-def create_layer(body: LayerCreate, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
-    if body.parent_layer_id:
-        role = resolve_effective_role_on_layer(conn, user_id, body.parent_layer_id)
-    else:
-        role = resolve_effective_role_on_project(conn, user_id, body.project_id)
-
-    if role is None or role < Role.editor:
-        raise HTTPException(status_code=403, detail="Permessi insufficienti per creare un layer qui")
-
+def _insert_layer_row(
+    conn, project_id: str, parent_layer_id: str | None, name: str, description: str | None = None
+) -> str:
+    """INSERT di un layer, calcolando il suo path ltree (label = uuid senza
+    trattini, concatenato a quello del padre). Non fa il controllo permessi (a
+    carico del chiamante): usato sia da create_layer sia dal seeding del
+    progetto demo in projects.py."""
     with conn.cursor() as cur:
         cur.execute("SELECT gen_random_uuid()")
         new_id = cur.fetchone()[0]
         label = _ltree_label(str(new_id))
 
-        if body.parent_layer_id:
-            cur.execute("SELECT path FROM layers WHERE id = %s", (body.parent_layer_id,))
+        if parent_layer_id:
+            cur.execute("SELECT path FROM layers WHERE id = %s", (parent_layer_id,))
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Layer padre non trovato")
@@ -47,9 +44,22 @@ def create_layer(body: LayerCreate, user_id: str = Depends(get_current_user_id),
         cur.execute(
             "INSERT INTO layers (id, project_id, parent_layer_id, name, description, path) "
             "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (new_id, body.project_id, body.parent_layer_id, body.name, body.description, new_path),
+            (new_id, project_id, parent_layer_id, name, description, new_path),
         )
-        layer_id = cur.fetchone()[0]
+        return str(cur.fetchone()[0])
+
+
+@router.post("")
+def create_layer(body: LayerCreate, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    if body.parent_layer_id:
+        role = resolve_effective_role_on_layer(conn, user_id, body.parent_layer_id)
+    else:
+        role = resolve_effective_role_on_project(conn, user_id, body.project_id)
+
+    if role is None or role < Role.editor:
+        raise HTTPException(status_code=403, detail="Permessi insufficienti per creare un layer qui")
+
+    layer_id = _insert_layer_row(conn, body.project_id, body.parent_layer_id, body.name, body.description)
 
     return {
         "id": layer_id,

@@ -2,6 +2,9 @@
 .env
 .env.*.local
 
+# Secret k8s con valori veri (vedi k8s/02-secret-app.example.yaml per il template)
+k8s/02-secret-app.yaml
+
 # OS
 .DS_Store
 Thumbs.db

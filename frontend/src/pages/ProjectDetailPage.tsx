@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { apiFetch } from "../api/client";
 import BoardManager from "../components/BoardManager";
 import ColumnManager from "../components/ColumnManager";
+import InfoTooltip from "../components/InfoTooltip";
 import KanbanBoard, { KanbanColumn, KanbanTask } from "../components/KanbanBoard";
 import PermissionsPanel from "../components/PermissionsPanel";
 import TagManager from "../components/TagManager";
@@ -142,8 +143,8 @@ export default function ProjectDetailPage() {
       <div className="page-header">
         <h1>
           {project && <span className="task-detail-readable-id">{project.prefix}</span>} {project?.name ?? "Progetto"}
+          <InfoTooltip text={project?.description || "Struttura a layer e task."} />
         </h1>
-        <p>{project?.description || "Struttura a layer e task."}</p>
       </div>
 
       <div className="tabs">

@@ -1,5 +1,7 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+// "vitest/config" ri-esporta defineConfig di vite con in più il campo "test"
+// tipizzato: un solo file di config invece di vite.config.ts + vitest.config.ts.
+import { defineConfig } from "vitest/config";
 
 // In sviluppo il dev server di Vite fa da proxy verso i servizi backend,
 // così il frontend può usare path relativi (/api, /auth, /ws) sia in dev
@@ -15,5 +17,13 @@ export default defineConfig({
         ws: true,
       },
     },
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    // ogni test riparte pulito: mock automatici ripristinati e i vi.stubGlobal
+    // (fetch, WebSocket, ...) rimossi, senza doverlo scrivere in ogni file.
+    restoreMocks: true,
+    unstubGlobals: true,
   },
 });

@@ -1,4 +1,5 @@
 import re
+from datetime import date, timedelta
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,6 +8,7 @@ from wav_core.db import get_conn
 from wav_core.permissions import Role, candidate_role_at_resource, resolve_effective_role_on_project
 
 from ..deps import get_current_user_id
+from .layers import _insert_layer_row
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -21,6 +23,13 @@ PROJECT_PREFIX_LENGTH = 4
 PROJECT_PREFIX_RE = re.compile(rf"^[A-Z]{{{PROJECT_PREFIX_LENGTH}}}$")
 
 
+def _normalize_and_validate_prefix(value: str) -> str:
+    value = value.strip().upper()
+    if not PROJECT_PREFIX_RE.match(value):
+        raise ValueError(f"Il prefisso deve essere di {PROJECT_PREFIX_LENGTH} lettere maiuscole (es. 'PROJ')")
+    return value
+
+
 class ProjectCreate(BaseModel):
     organization_id: str
     name: str
@@ -30,10 +39,18 @@ class ProjectCreate(BaseModel):
     @field_validator("prefix")
     @classmethod
     def _validate_prefix(cls, value: str) -> str:
-        value = value.strip().upper()
-        if not PROJECT_PREFIX_RE.match(value):
-            raise ValueError(f"Il prefisso deve essere di {PROJECT_PREFIX_LENGTH} lettere maiuscole (es. 'PROJ')")
-        return value
+        return _normalize_and_validate_prefix(value)
+
+
+class DemoProjectCreate(BaseModel):
+    organization_id: str
+    name: str = "Progetto Demo"
+    prefix: str
+
+    @field_validator("prefix")
+    @classmethod
+    def _validate_prefix(cls, value: str) -> str:
+        return _normalize_and_validate_prefix(value)
 
 
 class ColumnCreate(BaseModel):
@@ -141,6 +158,129 @@ def _parse_csv(value: str | None) -> list[str]:
     return [v for v in value.split(",") if v] if value else []
 
 
+def _insert_project_row(conn, organization_id: str, name: str, prefix: str, description: str | None = None) -> str:
+    """INSERT del progetto + le sue 3 colonne kanban di default. Non fa il
+    controllo permessi (a carico del chiamante): usato sia da create_project
+    sia da create_demo_project."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO projects (organization_id, name, description, prefix) VALUES (%s, %s, %s, %s) "
+            "RETURNING id",
+            (organization_id, name, description, prefix),
+        )
+        project_id = str(cur.fetchone()[0])
+
+        # ogni progetto nasce con 3 colonne di default: gli utenti con permessi
+        # da admin potranno poi rinominarle, riordinarle, aggiungerne altre o
+        # eliminarle (vedi endpoint /columns sotto).
+        for position, col_name in enumerate(DEFAULT_COLUMN_NAMES, start=1):
+            cur.execute(
+                "INSERT INTO board_columns (project_id, name, position) VALUES (%s, %s, %s)",
+                (project_id, col_name, position),
+            )
+    return project_id
+
+
+def _next_task_number(conn, project_id: str) -> int:
+    """Stesso UPDATE atomico di tasks.py::create_task (vedi lì il perché non c'è
+    un vincolo UNIQUE lato DB): duplicato qui perché è un one-liner e importarlo
+    da tasks.py creerebbe una dipendenza nella direzione sbagliata (tasks.py non
+    dipende da projects.py, non deve iniziare a farlo per un dettaglio come questo)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE projects SET next_task_number = next_task_number + 1 WHERE id = %s RETURNING next_task_number - 1",
+            (project_id,),
+        )
+        return cur.fetchone()[0]
+
+
+def _seed_demo_content(conn, project_id: str, creator_user_id: str):
+    """Struttura dimostrativa: due rami di layer con due sotto-layer ciascuno,
+    task distribuite su tutte le colonne kanban di default con tag/priorità/
+    scadenze/assegnatario variati, un paio di dipendenze e un commento - pensata
+    per mostrare in una demo la struttura a layer, la kanban, i tag, gli
+    assegnatari, le dipendenze e i commenti in un colpo solo. Non è pensata per
+    uso reale (niente eventi realtime/audit per ogni singola riga: sarebbe solo
+    rumore per un progetto che nasce già pieno)."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT name, id FROM board_columns WHERE project_id = %s", (project_id,))
+        columns = {name: str(cid) for name, cid in cur.fetchall()}
+    todo, doing, done = columns["Da fare"], columns["In corso"], columns["Fatto"]
+
+    frontend = _insert_layer_row(conn, project_id, None, "Frontend")
+    frontend_auth = _insert_layer_row(conn, project_id, frontend, "Autenticazione")
+    frontend_dash = _insert_layer_row(conn, project_id, frontend, "Dashboard")
+    backend = _insert_layer_row(conn, project_id, None, "Backend")
+    backend_api = _insert_layer_row(conn, project_id, backend, "API")
+    backend_db = _insert_layer_row(conn, project_id, backend, "Database")
+
+    tag_ids: dict[str, str] = {}
+    for tag_name, color in [("Bug", "#e74c3c"), ("Feature", "#4c6fe0"), ("Urgente", "#f39c12")]:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO tags (project_id, name, color, created_by) VALUES (%s, %s, %s, %s) RETURNING id",
+                (project_id, tag_name, color, creator_user_id),
+            )
+            tag_ids[tag_name] = str(cur.fetchone()[0])
+
+    # (layer, titolo, colonna, priorità 0-3, tag, assegna al creatore, giorni alla scadenza da oggi)
+    task_specs = [
+        (frontend_auth, "Implementare login OAuth", doing, 2, ["Feature"], True, 3),
+        (frontend_auth, "Aggiungere autenticazione a due fattori", todo, 1, ["Feature"], False, 14),
+        (frontend_dash, "Disegnare wireframe dashboard", done, 1, [], False, None),
+        (frontend_dash, "Grafici in tempo reale sulla dashboard", doing, 2, ["Feature"], True, 7),
+        (backend_api, "Endpoint REST per le task", done, 1, [], False, None),
+        (backend_api, "Rate limiting sulle API pubbliche", todo, 3, ["Urgente"], True, 2),
+        (backend_db, "Migrazione schema v2", todo, 2, [], False, 10),
+        (backend_db, "Ottimizzare le query più lente", doing, 1, ["Bug"], False, 5),
+    ]
+
+    today = date.today()
+    task_ids: dict[str, str] = {}
+    for layer_id, title, column_id, priority, tag_names, assign_to_creator, due_in_days in task_specs:
+        due_date = today + timedelta(days=due_in_days) if due_in_days else None
+        task_number = _next_task_number(conn, project_id)
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO tasks (layer_id, title, created_by, status_column_id, priority, due_date, task_number) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (layer_id, title, creator_user_id, column_id, priority, due_date, task_number),
+            )
+            task_id = str(cur.fetchone()[0])
+        task_ids[title] = task_id
+
+        with conn.cursor() as cur:
+            for tag_name in tag_names:
+                cur.execute(
+                    "INSERT INTO task_tags (task_id, tag_id) VALUES (%s, %s)", (task_id, tag_ids[tag_name])
+                )
+            if assign_to_creator:
+                cur.execute(
+                    "INSERT INTO task_assignees (task_id, principal_type, principal_id) VALUES (%s, 'user', %s)",
+                    (task_id, creator_user_id),
+                )
+
+    dependency_pairs = [
+        ("Aggiungere autenticazione a due fattori", "Implementare login OAuth"),
+        ("Rate limiting sulle API pubbliche", "Endpoint REST per le task"),
+    ]
+    with conn.cursor() as cur:
+        for task_title, depends_on_title in dependency_pairs:
+            cur.execute(
+                "INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (%s, %s)",
+                (task_ids[task_title], task_ids[depends_on_title]),
+            )
+
+        cur.execute(
+            "INSERT INTO comments (task_id, author_id, body) VALUES (%s, %s, %s)",
+            (
+                task_ids["Implementare login OAuth"],
+                creator_user_id,
+                "Partiamo da qui: una volta pronto il login sblocchiamo anche la 2FA.",
+            ),
+        )
+
+
 # ---------------------------------------------------------------------------
 # CRUD progetto
 # ---------------------------------------------------------------------------
@@ -153,25 +293,30 @@ def create_project(body: ProjectCreate, user_id: str = Depends(get_current_user_
         raise HTTPException(status_code=403, detail="Servono permessi da admin sull'organizzazione")
 
     try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO projects (organization_id, name, description, prefix) VALUES (%s, %s, %s, %s) "
-                "RETURNING id",
-                (body.organization_id, body.name, body.description, body.prefix),
-            )
-            project_id = cur.fetchone()[0]
-
-            # ogni progetto nasce con 3 colonne di default: gli utenti con permessi
-            # da admin potranno poi rinominarle, riordinarle, aggiungerne altre o
-            # eliminarle (vedi endpoint /columns sotto).
-            for position, col_name in enumerate(DEFAULT_COLUMN_NAMES, start=1):
-                cur.execute(
-                    "INSERT INTO board_columns (project_id, name, position) VALUES (%s, %s, %s)",
-                    (project_id, col_name, position),
-                )
+        project_id = _insert_project_row(conn, body.organization_id, body.name, body.prefix, body.description)
     except psycopg.errors.UniqueViolation:
         # autocommit: la INSERT fallita non lascia la connessione in uno stato
         # da ripulire (ogni statement è la propria transazione implicita).
+        raise HTTPException(status_code=409, detail=f"Il prefisso '{body.prefix}' è già usato da un altro progetto")
+
+    return {"id": project_id, "organization_id": body.organization_id, "name": body.name, "prefix": body.prefix}
+
+
+@router.post("/demo")
+def create_demo_project(
+    body: DemoProjectCreate, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)
+):
+    """Come create_project, ma popola subito il progetto con una struttura
+    dimostrativa (layer, task, tag, dipendenze, un commento) pensata per una
+    demo: niente da configurare a mano prima di mostrare l'app."""
+    role = candidate_role_at_resource(conn, user_id, "organization", body.organization_id)
+    if role is None or role < Role.admin:
+        raise HTTPException(status_code=403, detail="Servono permessi da admin sull'organizzazione")
+
+    try:
+        project_id = _insert_project_row(conn, body.organization_id, body.name, body.prefix)
+        _seed_demo_content(conn, project_id, user_id)
+    except psycopg.errors.UniqueViolation:
         raise HTTPException(status_code=409, detail=f"Il prefisso '{body.prefix}' è già usato da un altro progetto")
 
     return {"id": project_id, "organization_id": body.organization_id, "name": body.name, "prefix": body.prefix}

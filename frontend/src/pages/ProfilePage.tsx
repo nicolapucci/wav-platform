@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiFetch } from "../api/client";
+import InfoTooltip from "../components/InfoTooltip";
 
 type Profile = {
   id: string;
@@ -21,8 +22,10 @@ export default function ProfilePage() {
   return (
     <>
       <div className="page-header">
-        <h1>Profilo</h1>
-        <p>Le tue informazioni account.</p>
+        <h1>
+          Profilo
+          <InfoTooltip text="Le tue informazioni account." />
+        </h1>
       </div>
 
       {!profile && <p>Caricamento...</p>}

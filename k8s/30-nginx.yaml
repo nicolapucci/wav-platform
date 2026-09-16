@@ -1,0 +1,57 @@
+# Service di tipo LoadBalancer (non Ingress): scelta deliberata per restare
+# fedeli al docker-compose originale, dove nginx e' l'unico entrypoint esposto
+# sulla porta 80 dell'host. Su Docker Desktop il LoadBalancer viene esposto
+# direttamente su localhost, stesso comportamento del "ports: 80:80" di prima.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: wav-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: wav-platform
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80

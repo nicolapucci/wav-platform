@@ -1,0 +1,22 @@
+# Configurazione NON sensibile, condivisa dai servizi applicativi (equivalente
+# k8s di .env per le chiavi che non sono credenziali - quelle che lo sono
+# stanno in 02-secret-app.example.yaml, vedi il commento lì per il perché).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: wav-platform
+data:
+  REDIS_URL: redis://redis:6379/0
+  JWT_ALGORITHM: HS256
+  ACCESS_TOKEN_EXPIRE_MINUTES: "15"
+  REFRESH_TOKEN_EXPIRE_DAYS: "30"
+  S3_ENDPOINT: http://minio:9000
+  S3_BUCKET: wav-attachments
+  # usate dal container postgres stesso per il bootstrap (POSTGRES_PASSWORD
+  # sta invece nel Secret) - lo user/db non sono credenziali di per sé.
+  POSTGRES_USER: wav
+  POSTGRES_DB: wav
+  # usata dal container minio stesso per il bootstrap (MINIO_ROOT_PASSWORD sta
+  # nel Secret).
+  MINIO_ROOT_USER: wavminio

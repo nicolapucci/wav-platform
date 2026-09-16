@@ -11,6 +11,8 @@ export type KanbanTask = {
   priority: number;
 };
 
+const PRIORITY_LABELS = ["Bassa", "Media", "Alta", "Urgente"];
+
 export default function KanbanBoard({
   columns,
   tasks,
@@ -72,13 +74,14 @@ export default function KanbanBoard({
             onDrop={(e) => handleDrop(e, col.id)}
           >
             <div className="kanban-column-header">
-              {col.name} <span className="kanban-count">{columnTasks.length}</span>
+              {col.name}
+              <span className="kanban-count">{columnTasks.length}</span>
             </div>
             <div className="kanban-column-body">
               {columnTasks.map((t) => (
                 <div
                   key={t.id}
-                  className={`kanban-card${draggingTaskId === t.id ? " dragging" : ""}`}
+                  className={`kanban-card priority-${t.priority}${draggingTaskId === t.id ? " dragging" : ""}`}
                   draggable
                   onDragStart={(e) => handleDragStart(e, t.id)}
                   onDragEnd={handleDragEnd}
@@ -87,8 +90,14 @@ export default function KanbanBoard({
                       drag nativo del link (trascina l'URL) invece del nostro, sulla
                       stessa card */}
                   <Link to={`/tasks/${t.readable_id}`} draggable={false}>
-                    <span className="kanban-card-id">{t.readable_id}</span> {t.title}
+                    {t.title}
                   </Link>
+                  <div className="kanban-card-meta">
+                    <span className="kanban-card-id">{t.readable_id}</span>
+                    <span className={`kanban-priority priority-${t.priority}`}>
+                      {PRIORITY_LABELS[t.priority] ?? t.priority}
+                    </span>
+                  </div>
                   <select
                     value={t.column_id ?? ""}
                     onChange={(e) => onMoveTask(t.id, e.target.value)}

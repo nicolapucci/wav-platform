@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiFetch } from "../api/client";
+import InfoTooltip from "../components/InfoTooltip";
 import PermissionsPanel from "../components/PermissionsPanel";
 
 type Organization = { id: string; name: string };
@@ -44,8 +45,10 @@ export default function SettingsPage() {
   return (
     <>
       <div className="page-header">
-        <h1>Impostazioni</h1>
-        <p>Organizzazioni e permessi.</p>
+        <h1>
+          Impostazioni
+          <InfoTooltip text="Organizzazioni e permessi." />
+        </h1>
       </div>
 
       <div className="toolbar">

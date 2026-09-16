@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiFetch } from "../api/client";
+import InfoTooltip from "../components/InfoTooltip";
 import KanbanBoard, { KanbanColumn, KanbanTask } from "../components/KanbanBoard";
+import MultiSelect, { MultiSelectOption } from "../components/MultiSelect";
 import { realtimeSocket } from "../ws/socket";
 
 type Organization = { id: string; name: string; slug: string };
@@ -30,17 +32,15 @@ export default function KanbanViewPage() {
   const [loading, setLoading] = useState(true);
   const [projectBoards, setProjectBoards] = useState<ProjectBoard[]>([]);
 
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [assigneeQuery, setAssigneeQuery] = useState("");
-  const [assigneeResults, setAssigneeResults] = useState<UserResult[]>([]);
-  const [selectedAssignees, setSelectedAssignees] = useState<UserResult[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<MultiSelectOption[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<MultiSelectOption[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<MultiSelectOption[]>([]);
   const [currentUser, setCurrentUser] = useState<UserResult | null>(null);
 
   const filter: Filter = {
-    project_ids: selectedProjectIds,
-    assignee_ids: selectedAssignees.map((u) => u.id),
-    team_ids: selectedTeamIds,
+    project_ids: selectedProjects.map((o) => o.id),
+    assignee_ids: selectedAssignees.map((o) => o.id),
+    team_ids: selectedTeams.map((o) => o.id),
   };
 
   // filtri disponibili: progetti e gruppi vengono raccolti attraverso tutte le
@@ -75,16 +75,24 @@ export default function KanbanViewPage() {
     });
   }, []);
 
+  async function searchUsers(query: string): Promise<MultiSelectOption[]> {
+    const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    const users: UserResult[] = await res.json();
+    return users.map((u) => ({ id: u.id, label: `${u.display_name} (${u.email})` }));
+  }
+
   // scorciatoia "Assegnate a me": l'assegnatario può essere anche un gruppo di
   // cui l'utente fa parte, il filtro lato server (projects.py::_task_filter_clauses)
   // include già quel caso, qui basta selezionare se stessi come assignee_ids.
   function toggleAssignedToMe() {
     if (!currentUser) return;
+    const me: MultiSelectOption = { id: currentUser.id, label: currentUser.display_name };
     setSelectedAssignees((prev) =>
-      prev.some((u) => u.id === currentUser.id) ? prev.filter((u) => u.id !== currentUser.id) : [...prev, currentUser],
+      prev.some((o) => o.id === currentUser.id) ? prev.filter((o) => o.id !== currentUser.id) : [...prev, me],
     );
   }
-  const isAssignedToMeActive = !!currentUser && selectedAssignees.some((u) => u.id === currentUser.id);
+  const isAssignedToMeActive = !!currentUser && selectedAssignees.some((o) => o.id === currentUser.id);
 
   async function loadBoard(currentFilter: Filter) {
     setLoading(true);
@@ -124,18 +132,6 @@ export default function KanbanViewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(filter)]);
 
-  useEffect(() => {
-    if (assigneeQuery.length < 2) {
-      setAssigneeResults([]);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(assigneeQuery)}`);
-      if (res.ok) setAssigneeResults(await res.json());
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [assigneeQuery]);
-
   async function handleMoveTask(taskId: string, columnId: string) {
     const res = await apiFetch(`/api/tasks/${taskId}`, {
       method: "PATCH",
@@ -146,104 +142,57 @@ export default function KanbanViewPage() {
   }
 
   function clearFilters() {
-    setSelectedProjectIds([]);
-    setSelectedTeamIds([]);
+    setSelectedProjects([]);
+    setSelectedTeams([]);
     setSelectedAssignees([]);
   }
 
-  const hasActiveFilter = selectedProjectIds.length > 0 || selectedTeamIds.length > 0 || selectedAssignees.length > 0;
+  const hasActiveFilter = selectedProjects.length > 0 || selectedTeams.length > 0 || selectedAssignees.length > 0;
 
   return (
     <>
       <div className="page-header">
-        <h1>Kanban</h1>
-        <p>Tutte le task su cui hai almeno il permesso di lettura, filtrabili e raggruppate per progetto.</p>
+        <h1>
+          Kanban
+          <InfoTooltip text="Tutte le task su cui hai almeno il permesso di lettura, filtrabili e raggruppate per progetto." />
+        </h1>
       </div>
 
       <div className="toolbar">
         <button type="button" className={isAssignedToMeActive ? "active" : ""} onClick={toggleAssignedToMe}>
           Assegnate a me
         </button>
-      </div>
-
-      <div className="board-form">
-        <div className="field">
-          <label>Progetto (opzionale)</label>
-          <select
-            multiple
-            value={selectedProjectIds}
-            onChange={(e) => setSelectedProjectIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-          >
-            {allProjects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field">
-          <label>Gruppo (opzionale)</label>
-          <select
-            multiple
-            value={selectedTeamIds}
-            onChange={(e) => setSelectedTeamIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-          >
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field">
-          <label>Assegnatari specifici (opzionale)</label>
-          {selectedAssignees.length > 0 && (
-            <div className="chip-list">
-              {selectedAssignees.map((u) => (
-                <span key={u.id} className="chip">
-                  {u.display_name}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAssignees((prev) => prev.filter((x) => x.id !== u.id))}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          <input
-            placeholder="Cerca utente per email o nome..."
-            value={assigneeQuery}
-            onChange={(e) => setAssigneeQuery(e.target.value)}
-          />
-          {assigneeResults.length > 0 && (
-            <ul className="permissions-suggestions">
-              {assigneeResults.map((u) => (
-                <li key={u.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedAssignees((prev) => (prev.some((x) => x.id === u.id) ? prev : [...prev, u]));
-                      setAssigneeQuery("");
-                      setAssigneeResults([]);
-                    }}
-                  >
-                    {u.display_name} ({u.email})
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
         {hasActiveFilter && (
           <button type="button" className="link-button" onClick={clearFilters}>
             Azzera filtri
           </button>
         )}
+      </div>
+
+      <div className="board-form">
+        <MultiSelect
+          label="Progetto"
+          placeholder="Tutti i progetti"
+          selected={selectedProjects}
+          onChange={setSelectedProjects}
+          options={allProjects.map((p) => ({ id: p.id, label: p.name }))}
+        />
+
+        <MultiSelect
+          label="Gruppo"
+          placeholder="Tutti i gruppi"
+          selected={selectedTeams}
+          onChange={setSelectedTeams}
+          options={teams.map((t) => ({ id: t.id, label: t.name }))}
+        />
+
+        <MultiSelect
+          label="Assegnatari specifici"
+          placeholder="Cerca utente per email o nome..."
+          selected={selectedAssignees}
+          onChange={setSelectedAssignees}
+          onSearch={searchUsers}
+        />
       </div>
 
       {loading && <p>Caricamento...</p>}
