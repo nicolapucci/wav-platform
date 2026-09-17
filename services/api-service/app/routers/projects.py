@@ -8,6 +8,7 @@ from wav_core.db import get_conn
 from wav_core.permissions import Role, candidate_role_at_resource, resolve_effective_role_on_project
 
 from ..deps import get_current_user_id
+from ..visibility import visible_layers_cte
 from .layers import _insert_layer_row
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -79,32 +80,7 @@ def _require_project_admin(conn, user_id: str, project_id: str):
 
 
 def _visible_layers_cte() -> str:
-    """CTE dei layer del progetto (%(project_id)s) visibili a %(user_id)s, diretto
-    o via team - stessa logica di visibilità usata in tasks.py::search_tasks e
-    me.py::my_tasks, qui ristretta a un solo progetto."""
-    return """
-        WITH visible_layers AS (
-            SELECT DISTINCT l.id AS layer_id
-            FROM layers l
-            JOIN projects p ON p.id = l.project_id
-            LEFT JOIN role_assignments ra_layer
-                ON ra_layer.resource_type = 'layer' AND ra_layer.resource_id = l.id
-            LEFT JOIN role_assignments ra_project
-                ON ra_project.resource_type = 'project' AND ra_project.resource_id = p.id
-            LEFT JOIN role_assignments ra_org
-                ON ra_org.resource_type = 'organization' AND ra_org.resource_id = p.organization_id
-            LEFT JOIN team_members tm ON tm.user_id = %(user_id)s
-            WHERE p.id = %(project_id)s
-              AND (
-                (ra_layer.principal_type = 'user' AND ra_layer.principal_id = %(user_id)s)
-                OR (ra_layer.principal_type = 'team' AND ra_layer.principal_id = tm.team_id)
-                OR (ra_project.principal_type = 'user' AND ra_project.principal_id = %(user_id)s)
-                OR (ra_project.principal_type = 'team' AND ra_project.principal_id = tm.team_id)
-                OR (ra_org.principal_type = 'user' AND ra_org.principal_id = %(user_id)s)
-                OR (ra_org.principal_type = 'team' AND ra_org.principal_id = tm.team_id)
-              )
-        )
-    """
+    return visible_layers_cte(scoped_to_project=True)
 
 
 def _task_filter_clauses(layer_ids: list[str], assignee_ids: list[str], team_ids: list[str], tag_ids: list[str]):
@@ -323,7 +299,11 @@ def create_demo_project(
 
 
 @router.get("")
-def list_projects(organization_id: str, conn=Depends(get_conn)):
+def list_projects(organization_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    role = candidate_role_at_resource(conn, user_id, "organization", organization_id)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Nessun accesso a questa organizzazione")
+
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, name, description, prefix FROM projects WHERE organization_id = %s AND archived_at IS NULL",
@@ -334,18 +314,47 @@ def list_projects(organization_id: str, conn=Depends(get_conn)):
 
 
 @router.get("/{project_id}")
-def get_project(project_id: str, conn=Depends(get_conn)):
-    # TODO: verificare che l'utente abbia almeno ruolo 'reader' sul project
-    # (resolve_effective_role_on_project) prima di restituirlo.
+def get_project(project_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    role = resolve_effective_role_on_project(conn, user_id, project_id)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Nessun accesso a questo progetto")
+
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, organization_id, name, description, prefix FROM projects WHERE id = %s",
+            "SELECT id, organization_id, name, description, prefix FROM projects "
+            "WHERE id = %s AND archived_at IS NULL",
             (project_id,),
         )
         row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Progetto non trovato")
     return {"id": row[0], "organization_id": row[1], "name": row[2], "description": row[3], "prefix": row[4]}
+
+
+@router.delete("/{project_id}")
+def delete_project(project_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    """Cancellazione logica: archivia il progetto e, a cascata, tutti i suoi
+    layer e le loro task (vedi la nota in 0004_soft_delete.sql sul perché).
+    Richiede 'admin'+ sul progetto (non 'editor'+ come le mutazioni più
+    circoscritte): stesso criterio "impatto più ampio della singola risorsa
+    richiede una soglia più alta" già usato per l'eliminazione di un tag
+    (tags.py::delete_tag) o di un layer (layers.py::delete_layer)."""
+    role = resolve_effective_role_on_project(conn, user_id, project_id)
+    if role is None or role < Role.admin:
+        raise HTTPException(status_code=403, detail="Servono permessi da admin sul progetto per eliminarlo")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE layers SET archived_at = now() WHERE project_id = %s AND archived_at IS NULL",
+            (project_id,),
+        )
+        cur.execute(
+            "UPDATE tasks SET archived_at = now() "
+            "WHERE layer_id IN (SELECT id FROM layers WHERE project_id = %s) AND archived_at IS NULL",
+            (project_id,),
+        )
+        cur.execute("UPDATE projects SET archived_at = now() WHERE id = %s", (project_id,))
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +364,11 @@ def get_project(project_id: str, conn=Depends(get_conn)):
 
 
 @router.get("/{project_id}/columns", response_model=list[ColumnOut])
-def list_columns(project_id: str, conn=Depends(get_conn)):
+def list_columns(project_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    role = resolve_effective_role_on_project(conn, user_id, project_id)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Nessun accesso a questo progetto")
+
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, project_id, name, position FROM board_columns WHERE project_id = %s ORDER BY position",

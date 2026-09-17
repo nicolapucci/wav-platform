@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -162,5 +162,58 @@ describe("ProjectDetailPage - pannelli a comparsa", () => {
     expect(screen.queryByTestId("permissions-panel")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Permessi progetto" }));
     expect(screen.getByTestId("permissions-panel")).toBeInTheDocument();
+  });
+});
+
+describe("ProjectDetailPage - eliminazione", () => {
+  it("Elimina su un layer chiede conferma e chiama DELETE /layers/{id}", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderPage();
+    await screen.findByText("Layer radice");
+
+    // .layer-node del layer radice contiene anche l'intero sotto-albero (il
+    // .layer-node del figlio, con il SUO "Elimina"): serve scoparsi al solo
+    // .layer-node-header, che ha solo i pulsanti di QUESTO layer.
+    const layerHeader = screen.getByText("Layer radice").closest(".layer-node-header")!;
+    await user.click(within(layerHeader).getByRole("button", { name: "Elimina" }));
+
+    await waitFor(() => {
+      const deleteCall = mockApiFetch.mock.calls.find(
+        ([path, options]) => path === "/api/layers/layer-root" && (options as RequestInit)?.method === "DELETE",
+      );
+      expect(deleteCall).toBeDefined();
+    });
+  });
+
+  it("annullare la conferma non chiama DELETE sul layer", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderPage();
+    await screen.findByText("Layer radice");
+
+    const layerHeader = screen.getByText("Layer radice").closest(".layer-node-header")!;
+    await user.click(within(layerHeader).getByRole("button", { name: "Elimina" }));
+
+    const deleteCall = mockApiFetch.mock.calls.find(
+      ([path, options]) => path === "/api/layers/layer-root" && (options as RequestInit)?.method === "DELETE",
+    );
+    expect(deleteCall).toBeUndefined();
+  });
+
+  it("Elimina progetto chiede conferma e chiama DELETE /projects/{id}", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderPage();
+    await screen.findByText("Layer radice");
+
+    await user.click(screen.getByRole("button", { name: "Elimina progetto" }));
+
+    await waitFor(() => {
+      const deleteCall = mockApiFetch.mock.calls.find(
+        ([path, options]) => path === "/api/projects/proj-1" && (options as RequestInit)?.method === "DELETE",
+      );
+      expect(deleteCall).toBeDefined();
+    });
   });
 });

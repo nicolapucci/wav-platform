@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { apiFetch } from "../api/client";
 import BoardManager from "../components/BoardManager";
@@ -18,6 +18,7 @@ type Tab = "structure" | "dashboard";
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
@@ -136,6 +137,34 @@ export default function ProjectDetailPage() {
     loadAll();
   }
 
+  async function handleDeleteLayer(layerId: string, layerName: string) {
+    if (
+      !window.confirm(`Eliminare il layer "${layerName}"? Anche i suoi sotto-layer e le loro task verranno eliminati.`)
+    ) {
+      return;
+    }
+    const res = await apiFetch(`/api/layers/${layerId}`, { method: "DELETE" });
+    if (!res.ok) window.alert("Permessi insufficienti per eliminare questo layer.");
+    loadAll();
+  }
+
+  async function handleDeleteProject() {
+    if (!project) return;
+    if (
+      !window.confirm(
+        `Eliminare il progetto "${project.name}"? Tutti i suoi layer e le loro task verranno eliminati.`,
+      )
+    ) {
+      return;
+    }
+    const res = await apiFetch(`/api/projects/${project.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      window.alert("Permessi insufficienti per eliminare questo progetto.");
+      return;
+    }
+    navigate("/projects");
+  }
+
   const rootLayers = layers.filter((l) => l.parent_layer_id === null);
 
   return (
@@ -181,6 +210,9 @@ export default function ProjectDetailPage() {
             <button type="button" onClick={() => setShowProjectPermissions((v) => !v)}>
               Permessi progetto
             </button>
+            <button type="button" className="link-button" onClick={handleDeleteProject}>
+              Elimina progetto
+            </button>
           </div>
 
           {showColumnManager && projectId && (
@@ -219,6 +251,7 @@ export default function ProjectDetailPage() {
                 onCreateLayer={handleCreateLayer}
                 onCreateTask={handleCreateTask}
                 onMoveTask={handleMoveTask}
+                onDeleteLayer={handleDeleteLayer}
                 depth={0}
               />
             ))}
@@ -247,6 +280,7 @@ function LayerNode({
   onCreateLayer,
   onCreateTask,
   onMoveTask,
+  onDeleteLayer,
   depth,
 }: {
   layer: Layer;
@@ -257,6 +291,7 @@ function LayerNode({
   onCreateLayer: (parentLayerId: string) => void;
   onCreateTask: (layerId: string) => void;
   onMoveTask: (taskId: string, columnId: string) => void;
+  onDeleteLayer: (layerId: string, layerName: string) => void;
   depth: number;
 }) {
   const [showPermissions, setShowPermissions] = useState(false);
@@ -275,6 +310,9 @@ function LayerNode({
         </button>
         <button type="button" onClick={() => setShowPermissions((v) => !v)}>
           Permessi
+        </button>
+        <button type="button" className="link-button" onClick={() => onDeleteLayer(layer.id, layer.name)}>
+          Elimina
         </button>
       </div>
 
@@ -308,6 +346,7 @@ function LayerNode({
           onCreateLayer={onCreateLayer}
           onCreateTask={onCreateTask}
           onMoveTask={onMoveTask}
+          onDeleteLayer={onDeleteLayer}
           depth={depth + 1}
         />
       ))}

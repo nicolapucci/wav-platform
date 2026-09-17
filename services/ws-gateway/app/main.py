@@ -66,8 +66,11 @@ def _resolve_my_organization_ids(user_id: str) -> list[str]:
             LEFT JOIN role_assignments ra
                 ON ra.resource_type = 'organization' AND ra.resource_id = o.id
             LEFT JOIN team_members tm ON tm.user_id = %(uid)s
-            WHERE (ra.principal_type = 'user' AND ra.principal_id = %(uid)s)
-               OR (ra.principal_type = 'team' AND ra.principal_id = tm.team_id)
+            WHERE o.archived_at IS NULL
+              AND (
+                (ra.principal_type = 'user' AND ra.principal_id = %(uid)s)
+                OR (ra.principal_type = 'team' AND ra.principal_id = tm.team_id)
+              )
             """,
             {"uid": user_id},
         )

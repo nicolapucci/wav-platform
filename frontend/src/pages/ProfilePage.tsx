@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { apiFetch } from "../api/client";
+import { apiFetch, clearTokens } from "../api/client";
 import InfoTooltip from "../components/InfoTooltip";
 
 type Profile = {
@@ -12,12 +13,30 @@ type Profile = {
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     apiFetch("/api/me").then(async (res) => {
       if (res.ok) setProfile(await res.json());
     });
   }, []);
+
+  async function handleDeactivate() {
+    if (
+      !window.confirm(
+        "Disattivare il tuo account? Non potrai più accedere. L'azione non è annullabile da qui.",
+      )
+    ) {
+      return;
+    }
+    const res = await apiFetch("/api/me/deactivate", { method: "POST" });
+    if (!res.ok) {
+      window.alert("Impossibile disattivare l'account.");
+      return;
+    }
+    clearTokens();
+    navigate("/login");
+  }
 
   return (
     <>
@@ -44,6 +63,14 @@ export default function ProfilePage() {
       )}
 
       {/* TODO: modifica nome/avatar, cambio password, provider OAuth collegati */}
+
+      {profile && (
+        <div style={{ marginTop: 28 }}>
+          <button type="button" className="link-button" onClick={handleDeactivate}>
+            Disattiva account
+          </button>
+        </div>
+      )}
     </>
   );
 }

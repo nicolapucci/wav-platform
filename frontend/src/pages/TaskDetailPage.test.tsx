@@ -134,6 +134,39 @@ describe("TaskDetailPage - salvataggio", () => {
   });
 });
 
+describe("TaskDetailPage - eliminazione", () => {
+  it("chiede conferma, poi chiama DELETE e naviga via dalla pagina", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderPage();
+    await screen.findByDisplayValue("Titolo originale");
+
+    await user.click(screen.getByRole("button", { name: "Elimina task" }));
+
+    await waitFor(() => {
+      const deleteCall = mockApiFetch.mock.calls.find(
+        ([path, options]) => path === "/api/tasks/QA-1" && (options as RequestInit)?.method === "DELETE",
+      );
+      expect(deleteCall).toBeDefined();
+    });
+    await waitFor(() => expect(screen.queryByDisplayValue("Titolo originale")).not.toBeInTheDocument());
+  });
+
+  it("annullare la conferma non chiama DELETE", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderPage();
+    await screen.findByDisplayValue("Titolo originale");
+
+    await user.click(screen.getByRole("button", { name: "Elimina task" }));
+
+    const deleteCall = mockApiFetch.mock.calls.find(
+      ([path, options]) => path === "/api/tasks/QA-1" && (options as RequestInit)?.method === "DELETE",
+    );
+    expect(deleteCall).toBeUndefined();
+  });
+});
+
 describe("TaskDetailPage - commenti", () => {
   it("invia un commento e pulisce il campo dopo l'invio", async () => {
     const user = userEvent.setup();

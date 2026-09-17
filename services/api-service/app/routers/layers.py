@@ -70,7 +70,11 @@ def create_layer(body: LayerCreate, user_id: str = Depends(get_current_user_id),
 
 
 @router.get("")
-def list_layers(project_id: str, conn=Depends(get_conn)):
+def list_layers(project_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    role = resolve_effective_role_on_project(conn, user_id, project_id)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Nessun accesso a questo progetto")
+
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, parent_layer_id, name, description FROM layers "
@@ -79,3 +83,34 @@ def list_layers(project_id: str, conn=Depends(get_conn)):
         )
         rows = cur.fetchall()
     return [{"id": r[0], "parent_layer_id": r[1], "name": r[2], "description": r[3]} for r in rows]
+
+
+@router.delete("/{layer_id}")
+def delete_layer(layer_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    """Cancellazione logica: archivia il layer e, a cascata, ogni suo
+    sotto-layer (via ltree path, "path <@ path" include il nodo stesso) e le
+    task che vivono in uno qualsiasi di questi layer. Richiede 'admin'+: un
+    sotto-albero intero è un impatto più ampio della singola task che
+    editor/reader normalmente gestiscono (stesso criterio di
+    projects.py::delete_project e tags.py::delete_tag)."""
+    role = resolve_effective_role_on_layer(conn, user_id, layer_id)
+    if role is None or role < Role.admin:
+        raise HTTPException(status_code=403, detail="Servono permessi da admin sul layer per eliminarlo")
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT path FROM layers WHERE id = %s", (layer_id,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Layer non trovato")
+        subtree_path = row[0]
+
+        cur.execute(
+            "UPDATE layers SET archived_at = now() WHERE path <@ %s AND archived_at IS NULL",
+            (subtree_path,),
+        )
+        cur.execute(
+            "UPDATE tasks SET archived_at = now() "
+            "WHERE layer_id IN (SELECT id FROM layers WHERE path <@ %s) AND archived_at IS NULL",
+            (subtree_path,),
+        )
+    return {"status": "ok"}

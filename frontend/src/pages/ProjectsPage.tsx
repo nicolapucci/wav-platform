@@ -126,6 +126,30 @@ export default function ProjectsPage() {
     navigate(`/projects/${project.id}`);
   }
 
+  async function handleDeleteOrganization(organizationId: string, name: string) {
+    if (
+      !window.confirm(`Eliminare l'organizzazione "${name}"? Tutti i suoi progetti, layer e task verranno eliminati.`)
+    ) {
+      return;
+    }
+    const res = await apiFetch(`/api/organizations/${organizationId}`, { method: "DELETE" });
+    if (!res.ok) {
+      window.alert("Permessi insufficienti per eliminare questa organizzazione.");
+      return;
+    }
+    loadAll();
+  }
+
+  async function handleDeleteProject(projectId: string, name: string) {
+    if (!window.confirm(`Eliminare il progetto "${name}"? Tutti i suoi layer e task verranno eliminati.`)) return;
+    const res = await apiFetch(`/api/projects/${projectId}`, { method: "DELETE" });
+    if (!res.ok) {
+      window.alert("Permessi insufficienti per eliminare questo progetto.");
+      return;
+    }
+    loadAll();
+  }
+
   return (
     <>
       <div className="page-header">
@@ -159,14 +183,24 @@ export default function ProjectsPage() {
               <button type="button" onClick={() => handleCreateDemoProject(org.id)}>
                 + Progetto demo
               </button>
+              <button type="button" className="link-button" onClick={() => handleDeleteOrganization(org.id, org.name)}>
+                Elimina organizzazione
+              </button>
             </div>
           </div>
           <ul>
             {(projectsByOrg[org.id] || []).map((project) => (
-              <li key={project.id}>
+              <li key={project.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Link to={`/projects/${project.id}`}>
                   <span className="task-table-id">{project.prefix}</span> {project.name}
                 </Link>
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => handleDeleteProject(project.id, project.name)}
+                >
+                  Elimina
+                </button>
               </li>
             ))}
             {(projectsByOrg[org.id] || []).length === 0 && (

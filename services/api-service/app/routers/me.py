@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from wav_core.db import get_conn
 
 from ..deps import get_current_user_id
+from ..visibility import visible_layers_cte
 from .projects import _parse_csv, _task_filter_clauses
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -16,6 +17,21 @@ def my_profile(user_id: str = Depends(get_current_user_id), conn=Depends(get_con
         )
         row = cur.fetchone()
     return {"id": row[0], "email": row[1], "display_name": row[2], "avatar_url": row[3]}
+
+
+@router.post("/deactivate")
+def deactivate_me(user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    """Disattivazione dell'account, non cancellazione fisica: solo self-service
+    (nessun concetto di admin globale su tutti gli utenti in questa app, solo
+    ruoli scoped a organization/project/layer - un admin di organizzazione non
+    ha motivo di poter disattivare account altrui). Blocca login e refresh
+    successivi (vedi auth-service/app/main.py), ma un access token già emesso
+    resta valido fino alla sua naturale scadenza (max ACCESS_TOKEN_EXPIRE_MINUTES,
+    15 di default): niente blocklist dei token, coerente con la scelta già
+    fatta in deps.py di non fare query DB ad ogni richiesta autenticata."""
+    with conn.cursor() as cur:
+        cur.execute("UPDATE users SET deactivated_at = now() WHERE id = %s", (user_id,))
+    return {"status": "ok"}
 
 
 @router.get("/tasks")
@@ -33,26 +49,9 @@ def my_tasks(
     Implementazione di riferimento, da ottimizzare con vista materializzata o cache
     se il volume di layer/task cresce molto (vedi architettura.md §10).
     """
-    query = """
-        WITH visible_layers AS (
-            SELECT DISTINCT l.id AS layer_id
-            FROM layers l
-            JOIN projects p ON p.id = l.project_id
-            LEFT JOIN role_assignments ra_layer
-                ON ra_layer.resource_type = 'layer' AND ra_layer.resource_id = l.id
-            LEFT JOIN role_assignments ra_project
-                ON ra_project.resource_type = 'project' AND ra_project.resource_id = p.id
-            LEFT JOIN role_assignments ra_org
-                ON ra_org.resource_type = 'organization' AND ra_org.resource_id = p.organization_id
-            LEFT JOIN team_members tm ON tm.user_id = %(user_id)s
-            WHERE
-                (ra_layer.principal_type = 'user' AND ra_layer.principal_id = %(user_id)s)
-                OR (ra_layer.principal_type = 'team' AND ra_layer.principal_id = tm.team_id)
-                OR (ra_project.principal_type = 'user' AND ra_project.principal_id = %(user_id)s)
-                OR (ra_project.principal_type = 'team' AND ra_project.principal_id = tm.team_id)
-                OR (ra_org.principal_type = 'user' AND ra_org.principal_id = %(user_id)s)
-                OR (ra_org.principal_type = 'team' AND ra_org.principal_id = tm.team_id)
-        )
+    query = (
+        visible_layers_cte()
+        + """
         SELECT
             t.id, t.title, t.layer_id, t.updated_at,
             p.id, p.name,
@@ -85,7 +84,8 @@ def my_tasks(
           AND (%(search)s::text IS NULL OR t.title ILIKE '%%' || %(search)s::text || '%%')
         ORDER BY t.updated_at DESC
         LIMIT 100
-    """
+        """
+    )
     with conn.cursor() as cur:
         cur.execute(query, {"user_id": user_id, "search": search})
         rows = cur.fetchall()
@@ -121,27 +121,10 @@ def my_assigned_tasks(user_id: str = Depends(get_current_user_id), conn=Depends(
     colonna per posizione di ciascun progetto, la stessa convenzione con cui le
     board vengono create (["Da fare", "In corso", "Fatto"], l'ultima è quella
     terminale) anche se l'utente le ha rinominate."""
-    query = """
-        WITH visible_layers AS (
-            SELECT DISTINCT l.id AS layer_id
-            FROM layers l
-            JOIN projects p ON p.id = l.project_id
-            LEFT JOIN role_assignments ra_layer
-                ON ra_layer.resource_type = 'layer' AND ra_layer.resource_id = l.id
-            LEFT JOIN role_assignments ra_project
-                ON ra_project.resource_type = 'project' AND ra_project.resource_id = p.id
-            LEFT JOIN role_assignments ra_org
-                ON ra_org.resource_type = 'organization' AND ra_org.resource_id = p.organization_id
-            LEFT JOIN team_members tm ON tm.user_id = %(user_id)s
-            WHERE
-                (ra_layer.principal_type = 'user' AND ra_layer.principal_id = %(user_id)s)
-                OR (ra_layer.principal_type = 'team' AND ra_layer.principal_id = tm.team_id)
-                OR (ra_project.principal_type = 'user' AND ra_project.principal_id = %(user_id)s)
-                OR (ra_project.principal_type = 'team' AND ra_project.principal_id = tm.team_id)
-                OR (ra_org.principal_type = 'user' AND ra_org.principal_id = %(user_id)s)
-                OR (ra_org.principal_type = 'team' AND ra_org.principal_id = tm.team_id)
-        ),
-        last_columns AS (
+    query = (
+        visible_layers_cte()
+        + """
+        , last_columns AS (
             SELECT DISTINCT ON (project_id) project_id, id AS last_column_id
             FROM board_columns
             ORDER BY project_id, position DESC
@@ -172,7 +155,8 @@ def my_assigned_tasks(user_id: str = Depends(get_current_user_id), conn=Depends(
           )
         ORDER BY t.due_date NULLS LAST, t.updated_at DESC
         LIMIT 50
-    """
+        """
+    )
     with conn.cursor() as cur:
         cur.execute(query, {"user_id": user_id})
         rows = cur.fetchall()
@@ -221,27 +205,7 @@ def my_tasks_board(
     where_extra = (" AND " + " AND ".join(clauses)) if clauses else ""
 
     query = (
-        """
-        WITH visible_layers AS (
-            SELECT DISTINCT l.id AS layer_id
-            FROM layers l
-            JOIN projects p ON p.id = l.project_id
-            LEFT JOIN role_assignments ra_layer
-                ON ra_layer.resource_type = 'layer' AND ra_layer.resource_id = l.id
-            LEFT JOIN role_assignments ra_project
-                ON ra_project.resource_type = 'project' AND ra_project.resource_id = p.id
-            LEFT JOIN role_assignments ra_org
-                ON ra_org.resource_type = 'organization' AND ra_org.resource_id = p.organization_id
-            LEFT JOIN team_members tm ON tm.user_id = %(user_id)s
-            WHERE
-                (ra_layer.principal_type = 'user' AND ra_layer.principal_id = %(user_id)s)
-                OR (ra_layer.principal_type = 'team' AND ra_layer.principal_id = tm.team_id)
-                OR (ra_project.principal_type = 'user' AND ra_project.principal_id = %(user_id)s)
-                OR (ra_project.principal_type = 'team' AND ra_project.principal_id = tm.team_id)
-                OR (ra_org.principal_type = 'user' AND ra_org.principal_id = %(user_id)s)
-                OR (ra_org.principal_type = 'team' AND ra_org.principal_id = tm.team_id)
-        )
-        """
+        visible_layers_cte()
         + f"""
         SELECT t.id, t.title, t.status_column_id, t.priority, t.due_date, t.layer_id, p.id, p.name,
                p.prefix, t.task_number

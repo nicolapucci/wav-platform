@@ -7,6 +7,7 @@ from wav_core.permissions import Role, resolve_effective_role_on_layer
 
 from ..deps import get_current_user_id
 from ..events import enqueue_job, publish_org_task_event, publish_resource_event
+from ..visibility import visible_layers_cte
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -222,33 +223,12 @@ def search_tasks(
     conn=Depends(get_conn),
 ):
     """Ricerca per titolo, ristretta alle task visibili all'utente (stessa logica
-    di visibilità di /me/tasks). Usata dall'autocomplete delle dipendenze.
-
-    NOTA: questa query duplica la CTE 'visible_layers' di me.py::my_tasks; se in
-    futuro compaiono altri punti che hanno bisogno della stessa visibilità, vale
-    la pena estrarla in una funzione condivisa in wav_core."""
+    di visibilità di /me/tasks). Usata dall'autocomplete delle dipendenze."""
     resolved_exclude_id = _resolve_task_id(conn, exclude_task_id) if exclude_task_id else None
 
-    query = """
-        WITH visible_layers AS (
-            SELECT DISTINCT l.id AS layer_id
-            FROM layers l
-            JOIN projects p ON p.id = l.project_id
-            LEFT JOIN role_assignments ra_layer
-                ON ra_layer.resource_type = 'layer' AND ra_layer.resource_id = l.id
-            LEFT JOIN role_assignments ra_project
-                ON ra_project.resource_type = 'project' AND ra_project.resource_id = p.id
-            LEFT JOIN role_assignments ra_org
-                ON ra_org.resource_type = 'organization' AND ra_org.resource_id = p.organization_id
-            LEFT JOIN team_members tm ON tm.user_id = %(user_id)s
-            WHERE
-                (ra_layer.principal_type = 'user' AND ra_layer.principal_id = %(user_id)s)
-                OR (ra_layer.principal_type = 'team' AND ra_layer.principal_id = tm.team_id)
-                OR (ra_project.principal_type = 'user' AND ra_project.principal_id = %(user_id)s)
-                OR (ra_project.principal_type = 'team' AND ra_project.principal_id = tm.team_id)
-                OR (ra_org.principal_type = 'user' AND ra_org.principal_id = %(user_id)s)
-                OR (ra_org.principal_type = 'team' AND ra_org.principal_id = tm.team_id)
-        )
+    query = (
+        visible_layers_cte()
+        + """
         SELECT t.id, t.title, p.prefix, t.task_number
         FROM tasks t
         JOIN layers l ON l.id = t.layer_id
@@ -259,7 +239,8 @@ def search_tasks(
           AND (%(exclude_id)s::uuid IS NULL OR t.id <> %(exclude_id)s::uuid)
         ORDER BY t.updated_at DESC
         LIMIT 10
-    """
+        """
+    )
     with conn.cursor() as cur:
         cur.execute(query, {"user_id": user_id, "q": q, "exclude_id": resolved_exclude_id})
         rows = cur.fetchall()
@@ -270,7 +251,7 @@ def search_tasks(
 def get_task(task_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
     task_id = _resolve_task_id(conn, task_id)
     with conn.cursor() as cur:
-        cur.execute(f"SELECT {TASK_COLUMNS} FROM tasks WHERE id = %s", (task_id,))
+        cur.execute(f"SELECT {TASK_COLUMNS} FROM tasks WHERE id = %s AND archived_at IS NULL", (task_id,))
         row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Task non trovata")
@@ -278,6 +259,27 @@ def get_task(task_id: str, user_id: str = Depends(get_current_user_id), conn=Dep
     role = _require_role(conn, user_id, row[1], Role.reader)
     project_id, prefix = _project_info_for_layer(conn, row[1])
     return _row_to_task(row, role, project_id, prefix)
+
+
+@router.delete("/{task_id}")
+async def delete_task(task_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
+    """Cancellazione logica: stesso archived_at già filtrato ovunque le task
+    vengono lette (list_tasks, get_task, /me/tasks, ricerche...). Richiede
+    'editor'+, come update_task: a differenza di layer/progetto/organizzazione
+    non c'è una cascata da considerare qui, quindi resta la stessa soglia
+    delle altre modifiche alla task invece di quella più alta usata per le
+    risorse che contengono altro (vedi layers.py::delete_layer)."""
+    task_id = _resolve_task_id(conn, task_id)
+    layer_id = _get_layer_id_or_404(conn, task_id)
+    _require_role(conn, user_id, layer_id, Role.editor)
+
+    with conn.cursor() as cur:
+        cur.execute("UPDATE tasks SET archived_at = now() WHERE id = %s", (task_id,))
+
+    organization_id = _organization_id_for_layer(conn, layer_id)
+    await publish_resource_event("task", task_id, "task.deleted", {"task_id": task_id})
+    await publish_org_task_event(organization_id, "task.deleted", {"task_id": task_id})
+    return {"status": "ok"}
 
 
 @router.patch("/{task_id}", response_model=TaskOut)
@@ -325,8 +327,11 @@ async def update_task(
 
 
 @router.get("/{task_id}/assignees")
-def list_assignees(task_id: str, conn=Depends(get_conn)):
+def list_assignees(task_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
     task_id = _resolve_task_id(conn, task_id)
+    layer_id = _get_layer_id_or_404(conn, task_id)
+    _require_role(conn, user_id, layer_id, Role.reader)
+
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -410,8 +415,11 @@ async def remove_assignee(
 
 
 @router.get("/{task_id}/dependencies")
-def list_dependencies(task_id: str, conn=Depends(get_conn)):
+def list_dependencies(task_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
     task_id = _resolve_task_id(conn, task_id)
+    layer_id = _get_layer_id_or_404(conn, task_id)
+    _require_role(conn, user_id, layer_id, Role.reader)
+
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -453,6 +461,12 @@ def add_dependency(
 
     layer_id = _get_layer_id_or_404(conn, task_id)
     _require_role(conn, user_id, layer_id, Role.editor)
+    # serve poter vedere ANCHE depends_on_task_id, non solo task_id: altrimenti
+    # basterebbe editor su una task qualsiasi per collegarla (e quindi scoprirne
+    # il titolo via list_dependencies) a una task di un'altra organizzazione mai
+    # vista prima.
+    depends_on_layer_id = _get_layer_id_or_404(conn, depends_on_task_id)
+    _require_role(conn, user_id, depends_on_layer_id, Role.reader)
 
     with conn.cursor() as cur:
         cur.execute(
@@ -496,8 +510,11 @@ def remove_dependency(
 
 
 @router.get("/{task_id}/tags")
-def list_task_tags(task_id: str, conn=Depends(get_conn)):
+def list_task_tags(task_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
     task_id = _resolve_task_id(conn, task_id)
+    layer_id = _get_layer_id_or_404(conn, task_id)
+    _require_role(conn, user_id, layer_id, Role.reader)
+
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -541,6 +558,3 @@ async def remove_tag_from_task(
         cur.execute("DELETE FROM task_tags WHERE task_id = %s AND tag_id = %s", (task_id, tag_id))
     await publish_resource_event("task", task_id, "task.updated", {"task_id": task_id})
     return {"status": "ok"}
-
-# TODO: DELETE /{task_id} (archiviazione soft, non cancellazione fisica, coerente
-# con archived_at già presente nello schema).

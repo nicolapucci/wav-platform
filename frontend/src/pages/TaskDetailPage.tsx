@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { apiFetch } from "../api/client";
 import InfoTooltip from "../components/InfoTooltip";
@@ -40,6 +40,7 @@ function roleAtLeast(role: string | null, minimum: string) {
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
+  const navigate = useNavigate();
 
   const [task, setTask] = useState<Task | null>(null);
   const [assignees, setAssignees] = useState<Assignee[]>([]);
@@ -218,6 +219,18 @@ export default function TaskDetailPage() {
     });
     if (!res.ok) window.alert("Impossibile salvare: permessi insufficienti.");
     loadAll();
+  }
+
+  async function handleDelete() {
+    if (!taskId || !task) return;
+    if (!window.confirm(`Eliminare la task "${task.title}"? L'azione non è annullabile da qui.`)) return;
+
+    const res = await apiFetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+    if (!res.ok) {
+      window.alert("Impossibile eliminare: permessi insufficienti.");
+      return;
+    }
+    navigate("/my-tasks");
   }
 
   async function handleColumnChange(columnId: string) {
@@ -432,9 +445,14 @@ export default function TaskDetailPage() {
           </div>
 
           {canEdit && (
-            <button type="button" className="btn-primary" onClick={handleSave}>
-              Salva
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="btn-primary" onClick={handleSave}>
+                Salva
+              </button>
+              <button type="button" className="link-button" onClick={handleDelete}>
+                Elimina task
+              </button>
+            </div>
           )}
 
           <div className="field" style={{ marginTop: 22 }}>

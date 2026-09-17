@@ -96,8 +96,13 @@ async def create_comment(body: CommentCreate, user_id: str = Depends(get_current
 
 
 @router.get("")
-def list_comments(task_id: str, conn=Depends(get_conn)):
+def list_comments(task_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
     task_id = _resolve_task_id(conn, task_id)
+    layer_id = _layer_id_for_task(conn, task_id)
+    role = resolve_effective_role_on_layer(conn, user_id, layer_id)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Nessun accesso a questa task")
+
     with conn.cursor() as cur:
         cur.execute(
             """

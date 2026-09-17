@@ -24,6 +24,33 @@ def test_register_creates_user_and_returns_valid_tokens(client, db_conn):
     assert row == ("nuovo@example.com", "Nuovo Utente")
 
 
+def test_register_rejects_password_shorter_than_8_chars(client):
+    """Il minLength=8 lato client (LoginPage.tsx) è aggirabile da chiunque
+    chiami l'API direttamente: qui si prova che il server lo applica comunque."""
+    response = client.post(
+        "/register", json={"email": "corta@example.com", "password": "1234567", "display_name": "X"}
+    )
+    assert response.status_code == 422
+
+
+def test_register_rejects_password_longer_than_128_chars(client):
+    response = client.post(
+        "/register", json={"email": "lunga@example.com", "password": "a" * 129, "display_name": "X"}
+    )
+    assert response.status_code == 422
+
+
+def test_register_accepts_password_at_the_boundaries(client):
+    ok_min = client.post(
+        "/register", json={"email": "min8@example.com", "password": "a" * 8, "display_name": "X"}
+    )
+    assert ok_min.status_code == 200
+    ok_max = client.post(
+        "/register", json={"email": "max128@example.com", "password": "a" * 128, "display_name": "X"}
+    )
+    assert ok_max.status_code == 200
+
+
 def test_register_rejects_duplicate_email(client):
     body = {"email": "duplicato@example.com", "password": "pw123456", "display_name": "A"}
     assert client.post("/register", json=body).status_code == 200
@@ -98,4 +125,31 @@ def test_refresh_rejects_access_token_used_as_refresh_token(client):
 
 def test_refresh_rejects_garbage_token(client):
     response = client.post("/refresh", json={"refresh_token": "non-e-un-jwt"})
+    assert response.status_code == 401
+
+
+def test_login_rejects_deactivated_user(client, db_conn):
+    client.post(
+        "/register", json={"email": "deactivated@example.com", "password": "pw123456", "display_name": "D"}
+    )
+    with db_conn.cursor() as cur:
+        cur.execute("UPDATE users SET deactivated_at = now() WHERE email = %s", ("deactivated@example.com",))
+
+    response = client.post("/login", json={"email": "deactivated@example.com", "password": "pw123456"})
+    assert response.status_code == 401
+
+
+def test_refresh_rejects_token_of_deactivated_user(client, db_conn):
+    """Un refresh token emesso PRIMA della disattivazione non deve continuare a
+    funzionare indefinitamente: a differenza dell'access token (che scade da
+    solo entro ACCESS_TOKEN_EXPIRE_MINUTES), /refresh fa una query apposta."""
+    tokens = client.post(
+        "/register", json={"email": "deactivate-refresh@example.com", "password": "pw123456", "display_name": "D"}
+    ).json()
+    with db_conn.cursor() as cur:
+        cur.execute(
+            "UPDATE users SET deactivated_at = now() WHERE email = %s", ("deactivate-refresh@example.com",)
+        )
+
+    response = client.post("/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert response.status_code == 401
