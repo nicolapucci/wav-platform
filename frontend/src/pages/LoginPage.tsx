@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     const data = await res.json();
     setTokens(data.access_token, data.refresh_token);
-    navigate("/my-tasks");
+    navigate("/");
   }
 
   function toggleMode() {

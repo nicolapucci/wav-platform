@@ -3,6 +3,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import { getAccessToken } from "./api/client";
 import Layout from "./components/Layout";
 import { NotificationsProvider } from "./context/NotificationsContext";
+import HomePage from "./pages/HomePage";
 import KanbanViewPage from "./pages/KanbanViewPage";
 import LoginPage from "./pages/LoginPage";
 import MyTasksPage from "./pages/MyTasksPage";
@@ -36,6 +37,7 @@ export default function App() {
             </RequireAuth>
           }
         >
+          <Route path="/" element={<HomePage />} />
           <Route path="/my-tasks" element={<MyTasksPage />} />
           <Route path="/board" element={<KanbanViewPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
@@ -47,7 +49,7 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/my-tasks" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

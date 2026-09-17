@@ -1,38 +1,8 @@
 import { Link } from "react-router-dom";
 
 import InfoTooltip from "../components/InfoTooltip";
-import { NotificationItem, useNotifications } from "../context/NotificationsContext";
-
-const TYPE_LABELS: Record<string, string> = {
-  mention: "Menzione",
-  task_assigned: "Assegnazione",
-  resource_updated: "Aggiornamento",
-  comment_reply: "Risposta",
-};
-
-function describe(n: NotificationItem): string {
-  const payload = n.payload || {};
-  switch (n.type) {
-    case "mention":
-      return `Sei stato menzionato in un commento${
-        payload.comment_excerpt ? `: "${payload.comment_excerpt}"` : ""
-      }`;
-    case "task_assigned":
-      return `Sei stato assegnato alla task "${payload.task_title ?? ""}"`;
-    case "resource_updated":
-      return "Una risorsa che segui è stata aggiornata";
-    case "comment_reply":
-      return "Hai una nuova risposta a un commento";
-    default:
-      return "Nuova notifica";
-  }
-}
-
-function linkFor(n: NotificationItem): string | null {
-  if (n.entity_type === "task") return `/tasks/${n.entity_id}`;
-  if (typeof n.payload?.task_id === "string") return `/tasks/${n.payload.task_id}`;
-  return null;
-}
+import { useNotifications } from "../context/NotificationsContext";
+import { NOTIFICATION_TYPE_LABELS, describeNotification, notificationLink } from "../notifications/format";
 
 export default function NotificationsPage() {
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -61,14 +31,14 @@ export default function NotificationsPage() {
 
       <ul className="notification-list">
         {notifications.map((n) => {
-          const target = linkFor(n);
+          const target = notificationLink(n);
           const body = (
             <>
               <div className="notification-row">
-                <span className="notification-type">{TYPE_LABELS[n.type] ?? n.type}</span>
+                <span className="notification-type">{NOTIFICATION_TYPE_LABELS[n.type] ?? n.type}</span>
                 <span>{new Date(n.created_at).toLocaleString()}</span>
               </div>
-              <p>{describe(n)}</p>
+              <p>{describeNotification(n)}</p>
             </>
           );
 

@@ -1,10 +1,11 @@
-import { Bell, FolderKanban, LayoutGrid, ListChecks, LogOut, Settings, UserCircle, Users } from "lucide-react";
+import { Bell, FolderKanban, Home, LayoutGrid, ListChecks, LogOut, Settings, UserCircle, Users } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { clearTokens } from "../api/client";
 import { useNotifications } from "../context/NotificationsContext";
 
 const primaryLinks = [
+  { to: "/", label: "Home", icon: Home, end: true },
   { to: "/my-tasks", label: "Le mie task", icon: ListChecks },
   { to: "/board", label: "Kanban", icon: LayoutGrid },
   { to: "/projects", label: "Progetti", icon: FolderKanban },
@@ -34,8 +35,8 @@ export default function Sidebar() {
       <div className="sidebar-brand">WAV</div>
 
       <nav className="sidebar-nav">
-        {primaryLinks.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} className={linkClassName}>
+        {primaryLinks.map(({ to, label, icon: Icon, end }) => (
+          <NavLink key={to} to={to} end={end} className={linkClassName}>
             <Icon size={16} strokeWidth={1.75} />
             {label}
           </NavLink>

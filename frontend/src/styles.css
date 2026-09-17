@@ -58,6 +58,14 @@ a:hover {
   max-width: 880px;
 }
 
+/* La tabella task (pagina "Le mie task") ha molte colonne e sta stretta nel
+   max-width di default: quando è lei il contenuto della pagina, il contenitore
+   si allarga. :has() invece di una prop passata giù da Layout - resta scoped
+   a questa pagina senza toccare il layout di tutte le altre. */
+.main-content:has(.task-table-wrap) {
+  max-width: 1400px;
+}
+
 .page-header {
   margin-bottom: 24px;
 }
@@ -1106,6 +1114,64 @@ button:hover {
   border-top: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 12.5px;
+}
+
+/* --- Home --- */
+
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.home-column-header h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.home-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-task-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.home-task-item a {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+.home-task-item:hover {
+  background: var(--accent-soft);
+}
+
+.home-task-item p {
+  margin: 4px 0;
+  font-size: 13.5px;
 }
 
 /* --- Tabella task (pagina "Le mie task") --- */
