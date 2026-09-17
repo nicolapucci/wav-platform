@@ -4,6 +4,11 @@
 
 # Secret k8s con valori veri (vedi k8s/02-secret-app.example.yaml per il template)
 k8s/02-secret-app.yaml
+k8s/29-secret-nginx-tls.yaml
+
+# Certificato TLS locale, self-signed e rigenerabile (vedi il comment sul
+# volume "certs" in docker-compose.yml per il comando di generazione)
+nginx/certs/
 
 # OS
 .DS_Store
