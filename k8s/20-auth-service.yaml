@@ -28,6 +28,19 @@ spec:
                 name: app-config
             - secretRef:
                 name: app-secrets
+          # richiesti dall'HPA qui sotto: senza resources.requests.cpu non ha
+          # una base su cui calcolare una percentuale di utilizzo (target
+          # 60%, vedi spec.metrics), e resterebbe sempre "<unknown>". I valori
+          # sono tarati sull'uso reale osservato a riposo con "kubectl top
+          # pods" su questo cluster (pochi mCPU), con margine per il picco che
+          # deve far scattare lo scale-up.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
           readinessProbe:
             httpGet:
               path: /health
@@ -52,3 +65,34 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
+---
+# Scala orizzontalmente in base al traffico: parte da 1 pod (come tutti i
+# servizi stateless di questo namespace) e ne aggiunge fino a 5 quando la CPU
+# media dei pod esistenti supera il 60% della richiesta sopra (100m) - stesso
+# criterio applicato a api-service/ws-gateway/worker-service/frontend/nginx,
+# vedi i rispettivi file. Esclusi deliberatamente postgres/redis/minio: sono
+# stateful a istanza singola in questo setup, scalarli orizzontalmente
+# creerebbe repliche indipendenti con stato incoerente tra loro (specialmente
+# redis, che qui fa anche da pub/sub: un publish su una replica non
+# sarebbe mai visto da un subscriber connesso a un'altra) invece di più
+# capacità reale - richiederebbe un'architettura a cluster dedicata, non
+# semplicemente più repliche dello stesso Deployment.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-service
+  namespace: wav-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-service
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60

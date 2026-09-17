@@ -24,6 +24,14 @@ spec:
                 name: app-config
             - secretRef:
                 name: app-secrets
+          # vedi 20-auth-service.yaml per il perché di resources/HPA
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
           readinessProbe:
             httpGet:
               path: /health
@@ -48,3 +56,29 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
+---
+# Ogni pod tiene in memoria solo i socket connessi a LUI (ConnectionManager,
+# vedi connection_manager.py) e una propria connessione Redis pub/sub: più
+# repliche funzionano correttamente perché ciascuna si iscrive a Redis solo
+# per i canali che servono ai propri client, senza stato condiviso da
+# sincronizzare. Il Service davanti smista le nuove connessioni WebSocket tra
+# le repliche disponibili.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ws-gateway
+  namespace: wav-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ws-gateway
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60

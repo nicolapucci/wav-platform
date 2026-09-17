@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from wav_core.db import get_conn
-from wav_core.permissions import Role, candidate_role_at_resource
+from wav_core.permissions import Role, candidate_role_at_resource, invalidate_team_permissions, invalidate_user_permissions
 
 from ..deps import get_current_user_id
 from .permissions import _require_admin
@@ -92,6 +92,10 @@ def add_team_member(
             "INSERT INTO team_members (team_id, user_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
             (team_id, body.user_id),
         )
+    # solo il nuovo membro è interessato, non serve invalidate_team_permissions
+    # (che invalida OGNI membro): la sua composizione del team è l'unica cosa
+    # cambiata qui, i ruoli degli altri membri restano quelli che erano.
+    invalidate_user_permissions(body.user_id)
     return {"status": "ok"}
 
 
@@ -104,6 +108,7 @@ def remove_team_member(
         cur.execute(
             "DELETE FROM team_members WHERE team_id = %s AND user_id = %s", (team_id, member_user_id)
         )
+    invalidate_user_permissions(member_user_id)
     return {"status": "ok"}
 
 
@@ -130,6 +135,7 @@ def grant_role_to_team(
             """,
             (team_id, body.resource_type, body.resource_id, body.role),
         )
+    invalidate_team_permissions(conn, team_id)
     return {"status": "ok"}
 
 # NOTA: /teams/{id}/roles fa la stessa cosa di POST /permissions con

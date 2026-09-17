@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from wav_core.db import get_conn
-from wav_core.permissions import Role, resolve_effective_role
+from wav_core.permissions import Role, invalidate_team_permissions, invalidate_user_permissions, resolve_effective_role
 
 from ..deps import get_current_user_id
 
@@ -87,6 +87,11 @@ def grant_permission(body: PermissionGrant, user_id: str = Depends(get_current_u
             (body.principal_type, body.principal_id, body.resource_type, body.resource_id, body.role),
         )
         new_id = cur.fetchone()[0]
+
+    if body.principal_type == "user":
+        invalidate_user_permissions(body.principal_id)
+    else:
+        invalidate_team_permissions(conn, body.principal_id)
     return {"id": new_id, "status": "ok"}
 
 
@@ -94,15 +99,21 @@ def grant_permission(body: PermissionGrant, user_id: str = Depends(get_current_u
 def revoke_permission(assignment_id: str, user_id: str = Depends(get_current_user_id), conn=Depends(get_conn)):
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT resource_type, resource_id FROM role_assignments WHERE id = %s",
+            "SELECT resource_type, resource_id, principal_type, principal_id FROM role_assignments WHERE id = %s",
             (assignment_id,),
         )
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Permesso non trovato")
+        resource_type, resource_id, principal_type, principal_id = row
 
-        _require_admin(conn, user_id, row[0], row[1])
+        _require_admin(conn, user_id, resource_type, resource_id)
         cur.execute("DELETE FROM role_assignments WHERE id = %s", (assignment_id,))
+
+    if principal_type == "user":
+        invalidate_user_permissions(principal_id)
+    else:
+        invalidate_team_permissions(conn, principal_id)
     return {"status": "ok"}
 
 # NOTA: per assegnare un permesso a un TEAM invece che a un utente, il frontend

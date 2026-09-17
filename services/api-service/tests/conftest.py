@@ -156,6 +156,21 @@ def _clean_db(db_conn):
             cur.execute(f"TRUNCATE {', '.join(tables)} CASCADE")
 
 
+@pytest.fixture(autouse=True)
+def _clean_permission_cache():
+    """La cache dei permessi (wav_core.permissions, chiave perm:*) vive nello
+    stesso container Redis per l'intera sessione di test, non solo per un
+    singolo test come il DB: qui non è a rigore necessario, dato che ogni test
+    usa id generati freschi (nessuna collisione di chiave tra test diversi),
+    ma tenerlo pulito evita qualunque dubbio ed è coerente con _clean_db."""
+    from wav_core.redis_client import get_redis_sync
+
+    yield
+    r = get_redis_sync()
+    for key in r.scan_iter(match="perm:*"):
+        r.delete(key)
+
+
 def _random_prefix() -> str:
     return "".join(random.choices(string.ascii_uppercase, k=4))
 
@@ -208,23 +223,40 @@ def make_team(db_conn):
 @pytest.fixture
 def add_team_member(db_conn):
     def _add(team_id: str, user_id: str) -> None:
+        from wav_core.permissions import invalidate_user_permissions
+
         with db_conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO team_members (team_id, user_id) VALUES (%s, %s)",
                 (team_id, user_id),
             )
+        # rispecchia teams.py::add_team_member: un test che aggiunge un membro e
+        # poi controlla subito il suo ruolo effettivo (via un team role già
+        # concesso in precedenza) non deve vedere una voce di cache scritta
+        # PRIMA di questa membership.
+        invalidate_user_permissions(user_id)
     return _add
 
 
 @pytest.fixture
 def grant_role(db_conn):
     def _grant(principal_type: str, principal_id: str, resource_type: str, resource_id: str, role: str) -> None:
+        from wav_core.permissions import invalidate_team_permissions, invalidate_user_permissions
+
         with db_conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO role_assignments "
                 "(principal_type, principal_id, resource_type, resource_id, role) VALUES (%s, %s, %s, %s, %s)",
                 (principal_type, principal_id, resource_type, resource_id, role),
             )
+        # rispecchia permissions.py::grant_permission: senza, un test che grant_role
+        # due volte sulla stessa risorsa (per verificare un fallback o un cambio di
+        # ruolo) vedrebbe il risultato cache-ato della prima chiamata a
+        # candidate_role_at_resource, non il nuovo stato del DB.
+        if principal_type == "user":
+            invalidate_user_permissions(principal_id)
+        else:
+            invalidate_team_permissions(db_conn, principal_id)
     return _grant
 
 
