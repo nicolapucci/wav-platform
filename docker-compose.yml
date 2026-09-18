@@ -3,13 +3,18 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: wav
-      POSTGRES_PASSWORD: wav
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wav}
       POSTGRES_DB: wav
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
     ports:
-      - "5432:5432"
+      # Solo da questo host (127.0.0.1), mai esposto all'esterno: nessun
+      # servizio fuori da questa rete compose deve raggiungere postgres
+      # direttamente - nginx è l'unico ingresso pubblico. Ancora utile in
+      # locale per un client DB diretto (o via "ssh -L 5432:localhost:5432"
+      # su un deploy remoto).
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wav"]
       interval: 5s
@@ -19,19 +24,24 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      # redis non ha nessuna autenticazione configurata (vedi REDIS_URL): a
+      # maggior ragione mai esposto oltre localhost, stesso motivo di postgres
+      # sopra.
+      - "127.0.0.1:6379:6379"
 
   minio:
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: wavminio
-      MINIO_ROOT_PASSWORD: wavminio123
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-wavminio123}
     volumes:
       - minio-data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      # Stesso motivo di postgres sopra - la console S3 non deve essere
+      # raggiungibile da fuori questo host.
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
 
   auth-service:
     build:
@@ -42,7 +52,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8001:8000"
+      # Diretto solo da questo host - da fuori si passa per nginx (che fa
+      # anche TLS, questi non lo fanno).
+      - "127.0.0.1:8001:8000"
 
   api-service:
     build:
@@ -53,7 +65,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   ws-gateway:
     build:
@@ -66,7 +78,7 @@ services:
       redis:
         condition: service_started
     ports:
-      - "8002:8000"
+      - "127.0.0.1:8002:8000"
 
   worker-service:
     build:
@@ -81,7 +93,9 @@ services:
     build:
       context: ./frontend
     ports:
-      - "5173:80"
+      # Idem: da fuori si passa per nginx, questo resta un accesso diretto di
+      # comodo solo dalla VM stessa.
+      - "127.0.0.1:5173:80"
 
   nginx:
     image: nginx:alpine
