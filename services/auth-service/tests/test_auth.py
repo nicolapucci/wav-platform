@@ -153,3 +153,89 @@ def test_refresh_rejects_token_of_deactivated_user(client, db_conn):
 
     response = client.post("/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert response.status_code == 401
+
+
+def test_login_rate_limit_blocks_after_too_many_requests_from_same_ip(client):
+    ip = {"X-Real-IP": "10.0.0.1"}
+    # Email diversa a ogni richiesta: isola il rate-limit per IP dal lockout per
+    # account sotto - 5 fallimenti sulla STESSA email farebbero scattare un 429
+    # anche da soli, ma per un motivo diverso da quello che questo test verifica.
+    for i in range(10):
+        res = client.post("/login", json={"email": f"ratelimit{i}@example.com", "password": "x"}, headers=ip)
+        assert res.status_code == 401
+    blocked = client.post("/login", json={"email": "ratelimit-over@example.com", "password": "x"}, headers=ip)
+    assert blocked.status_code == 429
+
+
+def test_register_rate_limit_blocks_after_too_many_requests_from_same_ip(client):
+    ip = {"X-Real-IP": "10.0.0.2"}
+    for i in range(10):
+        res = client.post(
+            "/register",
+            json={"email": f"regratelimit{i}@example.com", "password": "password123", "display_name": "X"},
+            headers=ip,
+        )
+        assert res.status_code == 200
+    blocked = client.post(
+        "/register",
+        json={"email": "regratelimit-over@example.com", "password": "password123", "display_name": "X"},
+        headers=ip,
+    )
+    assert blocked.status_code == 429
+
+
+def test_rate_limit_is_isolated_per_ip(client):
+    for i in range(10):
+        res = client.post(
+            "/login", json={"email": f"perip{i}@example.com", "password": "x"}, headers={"X-Real-IP": "10.0.0.3"}
+        )
+        assert res.status_code == 401
+    # IP diverso: non eredita il budget esaurito del primo.
+    other_ip = client.post(
+        "/login", json={"email": "perip-other@example.com", "password": "x"}, headers={"X-Real-IP": "10.0.0.4"}
+    )
+    assert other_ip.status_code == 401
+
+
+def test_login_lockout_after_too_many_failed_attempts(client):
+    email = "lockout@example.com"
+    client.post("/register", json={"email": email, "password": "correctpw123", "display_name": "L"})
+
+    for _ in range(5):
+        res = client.post("/login", json={"email": email, "password": "sbagliata"})
+        assert res.status_code == 401
+
+    # bloccato ora, anche con la password giusta.
+    locked = client.post("/login", json={"email": email, "password": "correctpw123"})
+    assert locked.status_code == 429
+
+
+def test_login_lockout_is_isolated_per_email(client):
+    email_a = "lockout-a@example.com"
+    email_b = "lockout-b@example.com"
+    client.post("/register", json={"email": email_b, "password": "correctpw123", "display_name": "B"})
+
+    for _ in range(5):
+        client.post("/login", json={"email": email_a, "password": "sbagliata"})
+
+    # email_b non ha fallimenti propri accumulati: login regolare.
+    res = client.post("/login", json={"email": email_b, "password": "correctpw123"})
+    assert res.status_code == 200
+
+
+def test_successful_login_resets_lockout_counter(client):
+    email = "lockout-reset@example.com"
+    client.post("/register", json={"email": email, "password": "correctpw123", "display_name": "R"})
+
+    for _ in range(3):
+        client.post("/login", json={"email": email, "password": "sbagliata"})
+
+    ok = client.post("/login", json={"email": email, "password": "correctpw123"})
+    assert ok.status_code == 200
+
+    # dopo il successo il contatore riparte da zero: altri 3 fallimenti (sotto
+    # la soglia di 5) non bastano per il lockout, a differenza di 3+3 se il
+    # contatore non fosse stato azzerato al login riuscito.
+    for _ in range(3):
+        res = client.post("/login", json={"email": email, "password": "sbagliata"})
+        assert res.status_code == 401
