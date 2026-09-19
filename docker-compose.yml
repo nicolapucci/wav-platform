@@ -99,15 +99,22 @@ services:
 
   nginx:
     image: nginx:alpine
+    # Come il comando di default dell'immagine, più un reload ogni 6 ore: è così che
+    # nginx prende il certificato rinnovato da certbot (servizio sotto), senza
+    # segnali tra container né accesso al socket Docker.
+    command: /bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g "daemon off;"'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # Certificato self-signed, non committato (vedi .gitignore). Rigenerarlo con:
+      # In sviluppo un certificato self-signed, non committato (vedi .gitignore).
+      # Rigenerarlo con:
       #   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
       #     -keyout nginx/certs/tls.key -out nginx/certs/tls.crt -subj "/CN=localhost"
       # (su Git Bash/Windows: prefissare con MSYS_NO_PATHCONV=1, altrimenti "/CN=..."
-      # viene interpretato come un path di filesystem). Da sostituire con un
-      # certificato Let's Encrypt quando si prepara il deploy vero.
+      # viene interpretato come un path di filesystem). Sul deploy pubblico lo
+      # sostituisce certbot con quello Let's Encrypt, nello stesso percorso.
       - ./nginx/certs:/etc/nginx/certs:ro
+      # Webroot della challenge HTTP-01 di Let's Encrypt (lo scrive certbot, sotto)
+      - certbot-webroot:/var/www/certbot:ro
     ports:
       - "80:80"
       - "443:443"
@@ -117,9 +124,35 @@ services:
       - auth-service
       - frontend
 
+  # Let's Encrypt. Attivo solo col profilo "letsencrypt" (COMPOSE_PROFILES=letsencrypt
+  # nel .env del deploy pubblico): in sviluppo, col self-signed, non serve. Il primo
+  # certificato si ottiene con "sh nginx/init-letsencrypt.sh" (vedi README); da lì il
+  # servizio prova a rinnovarlo ogni 12 ore. Il dominio è l'unico parametro (DOMAIN
+  # nel .env): per cambiare provider/macchina basta cambiare quello.
+  certbot:
+    profiles: ["letsencrypt"]
+    image: certbot/certbot
+    entrypoint: ["/bin/sh", "/certbot/entrypoint.sh"]
+    command: ["renew-loop"]
+    environment:
+      DOMAIN: ${DOMAIN:-}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-}
+      CERTBOT_EXTRA_ARGS: ${CERTBOT_EXTRA_ARGS:-}
+    volumes:
+      - ./nginx/certbot/entrypoint.sh:/certbot/entrypoint.sh:ro
+      # stato di certbot (account, certificati, config di rinnovo): va tenuto tra un
+      # riavvio e l'altro - "docker compose down -v" lo cancella
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+      # dove nginx legge tls.crt/tls.key (rw qui, ro nel servizio nginx)
+      - ./nginx/certs:/nginx-certs
+
 volumes:
   pgdata:
   minio-data:
+  letsencrypt:
+  certbot-webroot:
 
 # Scalare orizzontalmente in locale (docker-compose non supporta "deploy.replicas"
 # fuori da Swarm), ad es.:

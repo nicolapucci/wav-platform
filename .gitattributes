@@ -1,0 +1,3 @@
+# Gli script shell girano in container/VM Linux: con un checkout CRLF (Windows,
+# core.autocrlf) "#!/bin/sh\r" non trova l'interprete.
+*.sh text eol=lf

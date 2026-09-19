@@ -47,9 +47,38 @@ Servizi esposti:
 - MinIO console: http://localhost:9001 (utente/password in `.env`)
 
 Il certificato TLS di nginx è **self-signed** (per questo browser/`curl` senza
-`-k` lo rifiutano) - da sostituire con uno vero (Let's Encrypt) al momento del
-deploy pubblico; nel frattempo va rigenerato con il comando `openssl` sopra
-(la cartella `nginx/certs/` è gitignorata, non contiene nulla al primo clone).
+`-k` lo rifiutano) - in sviluppo va rigenerato con il comando `openssl` sopra
+(la cartella `nginx/certs/` è gitignorata, non contiene nulla al primo clone);
+sul deploy pubblico lo sostituisce Let's Encrypt, vedi sotto.
+
+## HTTPS con Let's Encrypt (deploy pubblico, Docker Compose)
+
+Serve un nome DNS che punti alla macchina, con le porte 80 e 443 raggiungibili da
+internet (la verifica di Let's Encrypt arriva in chiaro su :80). Senza un dominio
+proprio va bene un hostname "magico" come `203-0-113-10.sslip.io` (risolve
+all'IP 203.0.113.10, nessuna registrazione).
+
+1. Nel `.env` della macchina (vedi i commenti in `.env.example`):
+
+   ```
+   DOMAIN=203-0-113-10.sslip.io
+   LETSENCRYPT_EMAIL=tu@example.com   # facoltativa, avvisi di scadenza
+   LETSENCRYPT_STAGING=1              # prima prova con il server di test
+   COMPOSE_PROFILES=letsencrypt       # tiene attivo il rinnovo automatico
+   ```
+
+2. `sh nginx/init-letsencrypt.sh` - crea un certificato provvisorio (nginx non
+   parte senza), avvia lo stack, chiede il certificato e fa ricaricare nginx.
+3. Con `LETSENCRYPT_STAGING=1` il certificato non è valido nei browser, ma non
+   consuma i limiti di richieste di Let's Encrypt: se la prova va a buon fine,
+   togli quella riga dal `.env` e rilancia lo script per quello vero.
+
+Il rinnovo è automatico: il servizio `certbot` (profilo `letsencrypt`) controlla
+ogni 12 ore e nginx ricarica i certificati ogni 6. Il dominio è l'unico parametro
+legato alla macchina: cambiando provider basta cambiare `DOMAIN`. Non usare
+`docker compose down -v` sulla macchina, cancella il volume con i certificati
+(riemetterli conta nei limiti di Let's Encrypt). Su k8s Let's Encrypt si integra
+con cert-manager, non con questo flusso (non coperto qui).
 
 La prima volta che il container Postgres parte, esegue automaticamente tutte le
 migrazioni in `db/migrations/` (grazie al mount su `/docker-entrypoint-initdb.d`).
@@ -156,8 +185,8 @@ curl -X POST http://localhost:8000/organizations -H "Authorization: Bearer $TOKE
 
 ## Prossimi passi consigliati
 
-1. Integrare Let's Encrypt al posto del certificato self-signed di nginx
-   (compose e k8s) quando si prepara un deploy pubblico con un dominio vero.
+1. Let's Encrypt su k8s (cert-manager): per Docker Compose è già integrato, vedi
+   la sezione sopra.
 2. Implementare il filtro permessi reale in `ws-gateway/app/main.py::permission_filter`
    per i canali `evt:org:*:tasks`.
 3. Risolvere in `ws-gateway` **tutte** le organizzazioni dell'utente per la
