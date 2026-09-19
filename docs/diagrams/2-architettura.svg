@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Architettura a servizi con un solo ingresso pubblico">
+<title>Architettura a servizi con un solo ingresso pubblico</title>
+<desc>Il browser parla HTTPS/WSS con nginx, unico ingresso; nginx instrada verso frontend, auth-service, api-service e ws-gateway. Il worker consuma la coda Redis. Tutti i servizi condividono la libreria wav_core e usano PostgreSQL, Redis e (in futuro) MinIO.</desc>
+<rect width="1600" height="900" fill="#FFFFFF"/>
+<text x="160.0" y="52.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle" letter-spacing="3">CLIENT</text>
+<text x="540.0" y="52.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle" letter-spacing="3">INGRESSO</text>
+<text x="995.0" y="52.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle" letter-spacing="3">SERVIZI</text>
+<text x="1455.0" y="52.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle" letter-spacing="3">DATI</text>
+<rect x="50" y="340" width="220" height="140" rx="14" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="160.0" y="394.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="26" font-weight="700" fill="#1B2433" text-anchor="middle">Browser</text>
+<text x="160.0" y="420.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#566175" text-anchor="middle">React + TypeScript</text>
+<text x="160.0" y="445.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#566175" text-anchor="middle">SPA · Vite</text>
+<rect x="430" y="320" width="220" height="180" rx="14" fill="#ECEBFF" stroke="#5B54D6" stroke-width="2.5"/>
+<text x="540.0" y="394.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="26" font-weight="700" fill="#1B2433" text-anchor="middle">nginx</text>
+<text x="540.0" y="420.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#566175" text-anchor="middle">reverse proxy</text>
+<text x="540.0" y="445.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#566175" text-anchor="middle">TLS · 80 → 443</text>
+<polyline points="285.0,410.0 415.0,410.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="430.0,410.0 415.0,416.5 415.0,403.5" fill="#3B4658"/>
+<polygon points="270.0,410.0 285.0,403.5 285.0,416.5" fill="#3B4658"/>
+<text x="350.0" y="394.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="600" fill="#566175" text-anchor="middle">HTTPS · WSS</text>
+<rect x="430" y="580" width="220" height="92" rx="14" fill="#ECEBFF" stroke="#5B54D6" stroke-width="2.5" stroke-dasharray="8 6"/>
+<text x="540.0" y="622.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">certbot</text>
+<text x="540.0" y="646.2" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">Let's Encrypt</text>
+<polyline points="540.0,580.0 540.0,515.0" fill="none" stroke="#5B54D6" stroke-width="2.6" stroke-linejoin="round" stroke-dasharray="8 6"/>
+<polygon points="540.0,500.0 546.5,515.0 533.5,515.0" fill="#5B54D6"/>
+<text x="556.0" y="548.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#566175" text-anchor="start">rinnova il certificato</text>
+<rect x="830" y="80" width="340" height="88" rx="14" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="1000.0" y="120.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="700" fill="#1B2433" text-anchor="middle">frontend</text>
+<text x="1000.0" y="144.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">file statici della SPA</text>
+<rect x="805" y="205" width="390" height="505" rx="18" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2.5" stroke-dasharray="10 7"/>
+<rect x="830" y="245" width="340" height="88" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1000.0" y="285.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="700" fill="#1B2433" text-anchor="middle">auth-service</text>
+<text x="1000.0" y="309.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">login · registrazione · refresh JWT</text>
+<rect x="830" y="349" width="340" height="88" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1000.0" y="389.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="700" fill="#1B2433" text-anchor="middle">api-service</text>
+<text x="1000.0" y="413.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">REST: organizzazioni, progetti, task</text>
+<rect x="830" y="453" width="340" height="88" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1000.0" y="493.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="700" fill="#1B2433" text-anchor="middle">ws-gateway</text>
+<text x="1000.0" y="517.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">WebSocket → eventi in tempo reale</text>
+<rect x="830" y="557" width="340" height="88" rx="14" fill="#F1E9FF" stroke="#7B4FD3" stroke-width="2.5"/>
+<text x="1000.0" y="597.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="700" fill="#1B2433" text-anchor="middle">worker-service</text>
+<text x="1000.0" y="621.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">job in coda: audit e notifiche</text>
+<text x="1000.0" y="676.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle">wav_core · libreria condivisa</text>
+<text x="1000.0" y="698.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">config · db · redis · JWT · permessi</text>
+<line x1="650" y1="410" x2="712" y2="410" stroke="#3B4658" stroke-width="2.6"/>
+<line x1="712" y1="124" x2="712" y2="497" stroke="#3B4658" stroke-width="2.6"/>
+<polyline points="712.0,124.0 815.0,124.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="830.0,124.0 815.0,130.5 815.0,117.5" fill="#3B4658"/>
+<rect x="757.2" y="109.5" width="29.6" height="29" rx="14.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="772.0" y="129.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="17" font-weight="700" fill="#1B2433" text-anchor="middle">/</text>
+<polyline points="712.0,289.0 815.0,289.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="830.0,289.0 815.0,295.5 815.0,282.5" fill="#3B4658"/>
+<rect x="740.0" y="274.5" width="64.0" height="29" rx="14.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="772.0" y="294.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="17" font-weight="700" fill="#1B2433" text-anchor="middle">/auth</text>
+<polyline points="712.0,393.0 815.0,393.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="830.0,393.0 815.0,399.5 815.0,386.5" fill="#3B4658"/>
+<rect x="744.8" y="378.5" width="54.4" height="29" rx="14.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="772.0" y="398.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="17" font-weight="700" fill="#1B2433" text-anchor="middle">/api</text>
+<polyline points="712.0,497.0 815.0,497.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="830.0,497.0 815.0,503.5 815.0,490.5" fill="#3B4658"/>
+<rect x="744.5" y="482.5" width="54.9" height="29" rx="14.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="772.0" y="502.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="17" font-weight="700" fill="#1B2433" text-anchor="middle">/ws</text>
+<rect x="1350" y="235" width="210" height="120" rx="14" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5"/>
+<text x="1455.0" y="279.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">PostgreSQL 16</text>
+<text x="1455.0" y="303.7" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">dati · ltree</text>
+<text x="1455.0" y="326.7" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">migrazioni SQL</text>
+<rect x="1350" y="390" width="210" height="180" rx="14" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5"/>
+<text x="1455.0" y="442.1" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="24" font-weight="700" fill="#1B2433" text-anchor="middle">Redis 7</text>
+<text x="1455.0" y="466.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">Pub/Sub · eventi</text>
+<text x="1455.0" y="490.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">Streams · job</text>
+<text x="1455.0" y="513.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">cache permessi</text>
+<text x="1455.0" y="536.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">rate limit login</text>
+<rect x="1350" y="610" width="210" height="100" rx="14" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5" stroke-dasharray="8 6"/>
+<text x="1455.0" y="656.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">MinIO (S3)</text>
+<text x="1455.0" y="680.2" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">allegati · previsto</text>
+<polyline points="1195.0,295.0 1335.0,295.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1350.0,295.0 1335.0,301.5 1335.0,288.5" fill="#3B4658"/>
+<text x="1272.0" y="283.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="600" fill="#566175" text-anchor="middle">SQL</text>
+<polyline points="1195.0,480.0 1335.0,480.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1350.0,480.0 1335.0,486.5 1335.0,473.5" fill="#3B4658"/>
+<text x="1272.0" y="468.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="600" fill="#566175" text-anchor="middle">eventi · job</text>
+<polyline points="1195.0,660.0 1335.0,660.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round" stroke-dasharray="8 6"/>
+<polygon points="1350.0,660.0 1335.0,666.5 1335.0,653.5" fill="#3B4658"/>
+<text x="1272.0" y="648.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="600" fill="#566175" text-anchor="middle">presigned URL</text>
+<text x="800.0" y="786.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="700" fill="#1B2433" text-anchor="middle">Un solo ingresso pubblico (nginx, HTTPS): i servizi non si chiamano tra loro.</text>
+<text x="800.0" y="820.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400" fill="#566175" text-anchor="middle">Comunicano solo tramite Redis (eventi e code) e PostgreSQL; api-service, ws-gateway e worker</text>
+<text x="800.0" y="848.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400" fill="#566175" text-anchor="middle">si scalano aggiungendo repliche.</text>
+</svg>

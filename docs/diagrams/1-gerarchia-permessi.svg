@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Gerarchia dei dati e permessi ereditati">
+<title>Gerarchia dei dati e permessi ereditati</title>
+<desc>Organizzazione, progetto, layer e task. Un ruolo assegnato a un livello vale per tutto cio' che sta sotto; la cancellazione logica scende a cascata nello stesso verso.</desc>
+<rect width="1600" height="900" fill="#FFFFFF"/>
+<rect x="80" y="100" width="280" height="170" rx="14" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="220.0" y="160.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" fill="#1B2433" text-anchor="middle">Organizzazione</text>
+<text x="220.0" y="206.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">team e membri</text>
+<text x="220.0" y="236.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">ruoli di base</text>
+<rect x="466" y="100" width="280" height="170" rx="14" fill="#ECEBFF" stroke="#5B54D6" stroke-width="2.5"/>
+<text x="606.0" y="160.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" fill="#1B2433" text-anchor="middle">Progetto</text>
+<text x="606.0" y="206.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">prefisso (es. DEMO-12)</text>
+<text x="606.0" y="236.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">colonne kanban</text>
+<rect x="852" y="100" width="280" height="170" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="992.0" y="160.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" fill="#1B2433" text-anchor="middle">Layer</text>
+<text x="992.0" y="206.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">albero di sotto-layer</text>
+<text x="992.0" y="236.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">(annidabili, ltree)</text>
+<rect x="1238" y="100" width="280" height="170" rx="14" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5"/>
+<text x="1378.0" y="160.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" fill="#1B2433" text-anchor="middle">Task</text>
+<text x="1378.0" y="206.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">assegnatari · tag</text>
+<text x="1378.0" y="236.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="middle">dipendenze · commenti</text>
+<polyline points="366.0,185.0 445.0,185.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="460.0,185.0 445.0,191.5 445.0,178.5" fill="#3B4658"/>
+<text x="413.0" y="171.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#566175" text-anchor="middle">contiene</text>
+<polyline points="752.0,185.0 831.0,185.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="846.0,185.0 831.0,191.5 831.0,178.5" fill="#3B4658"/>
+<text x="799.0" y="171.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#566175" text-anchor="middle">contiene</text>
+<polyline points="1138.0,185.0 1217.0,185.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1232.0,185.0 1217.0,191.5 1217.0,178.5" fill="#3B4658"/>
+<text x="1185.0" y="171.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#566175" text-anchor="middle">contiene</text>
+<polyline points="922.0,100.0 922.0,66.0 1062.0,66.0 1062.0,85.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1062.0,100.0 1055.5,85.0 1068.5,85.0" fill="#3B4658"/>
+<text x="992.0" y="54.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#566175" text-anchor="middle">sotto-layer</text>
+<line x1="80" y1="270" x2="80" y2="296" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="80" y1="336" x2="80" y2="540" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="466" y1="270" x2="466" y2="296" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="466" y1="336" x2="466" y2="540" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="852" y1="270" x2="852" y2="296" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="852" y1="336" x2="852" y2="540" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="1238" y1="270" x2="1238" y2="296" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="1238" y1="336" x2="1238" y2="540" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6 6"/>
+<text x="80.0" y="320.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#1B2433">PERMESSI</tspan><tspan font-weight="400" fill="#566175">  ·  un ruolo vale per il livello in cui è assegnato e per tutto ciò che sta sotto</tspan></text>
+<text x="1518.0" y="320.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="600" fill="#5B54D6" text-anchor="end">reader &lt; editor &lt; admin &lt; owner</text>
+<rect x="80" y="340" width="1438" height="52" rx="12" fill="#ECEBFF" stroke="#5B54D6" stroke-width="2.5"/>
+<text x="102.0" y="374.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#1B2433">Anna</tspan><tspan font-weight="400" fill="#1B2433"> · admin sull'organizzazione</tspan></text>
+<rect x="466" y="408" width="1052" height="52" rx="12" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="488.0" y="442.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#1B2433">Marco</tspan><tspan font-weight="400" fill="#1B2433"> · editor sul progetto</tspan></text>
+<rect x="852" y="476" width="666" height="52" rx="12" fill="#EEF1F6" stroke="#64748B" stroke-width="2.5"/>
+<text x="874.0" y="510.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#1B2433">Sara</tspan><tspan font-weight="400" fill="#1B2433"> · reader sul layer «Backend»</tspan></text>
+<text x="80.0" y="606.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#D13B3B">CANCELLAZIONE LOGICA</tspan><tspan font-weight="400" fill="#566175">  ·  archived_at scende a cascata, nulla viene cancellato dal database</tspan></text>
+<polyline points="220.0,670.0 1453.0,670.0" fill="none" stroke="#D13B3B" stroke-width="3.4" stroke-linejoin="round"/>
+<polygon points="1468.0,670.0 1453.0,676.5 1453.0,663.5" fill="#D13B3B"/>
+<circle cx="220.0" cy="670" r="10" fill="#D13B3B" stroke="#FFFFFF" stroke-width="3"/>
+<circle cx="606.0" cy="670" r="10" fill="#D13B3B" stroke="#FFFFFF" stroke-width="3"/>
+<circle cx="992.0" cy="670" r="10" fill="#D13B3B" stroke="#FFFFFF" stroke-width="3"/>
+<circle cx="1378.0" cy="670" r="10" fill="#D13B3B" stroke="#FFFFFF" stroke-width="3"/>
+<text x="220.0" y="714.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="500" fill="#1B2433" text-anchor="middle">elimina l'organizzazione</text>
+<text x="606.0" y="714.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="500" fill="#1B2433" text-anchor="middle">archivia i progetti</text>
+<text x="992.0" y="714.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="500" fill="#1B2433" text-anchor="middle">archivia i layer</text>
+<text x="1378.0" y="714.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="500" fill="#1B2433" text-anchor="middle">archivia le task</text>
+<text x="800.0" y="800.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400" fill="#566175" text-anchor="middle">Il ruolo effettivo di un utente su una task è il più alto trovato risalendo task → layer → progetto → organizzazione,</text>
+<text x="800.0" y="830.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400" fill="#566175" text-anchor="middle">sia tra i suoi ruoli diretti sia tra quelli dei team a cui appartiene.</text>
+</svg>

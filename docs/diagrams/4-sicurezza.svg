@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Ogni richiesta attraversa limiti, verifica del token e dei permessi">
+<title>Ogni richiesta attraversa limiti, verifica del token e dei permessi</title>
+<desc>Flusso di login con rate limit per IP, blocco per account e argon2; flusso di ogni richiesta autenticata con verifica JWT, ruolo effettivo (cache Redis 30 s, poi Postgres) e filtro delle risorse archiviate.</desc>
+<rect width="1600" height="900" fill="#FFFFFF"/>
+<text x="330.0" y="52.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle" letter-spacing="2">ACCESSO · POST /auth/login</text>
+<text x="1120.0" y="52.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" fill="#566175" text-anchor="middle" letter-spacing="2">OGNI RICHIESTA · /api/…</text>
+<line x1="805" y1="70" x2="805" y2="800" stroke="#E2E8F0" stroke-width="2"/>
+<rect x="195.0" y="78" width="270" height="50" rx="25.0" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="330.0" y="109.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">POST /auth/login</text>
+<polyline points="330.0,128.0 330.0,145.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="330.0,160.0 323.5,145.0 336.5,145.0" fill="#3B4658"/>
+<polygon points="330,160.0 500.0,222 330,284.0 160.0,222" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="330.0" y="216.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">oltre 10 richieste/min</text>
+<text x="330.0" y="240.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">dallo stesso IP?</text>
+<polyline points="500.0,222.0 585.0,222.0" fill="none" stroke="#D13B3B" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="600.0,222.0 585.0,228.5 585.0,215.5" fill="#D13B3B"/>
+<rect x="530.9" y="186.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="550.0" y="205.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#D13B3B" text-anchor="middle">sì</text>
+<rect x="600" y="190" width="190" height="64" rx="12" fill="#FDE7E7" stroke="#D13B3B" stroke-width="2.5"/>
+<text x="695.0" y="217.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#D13B3B" text-anchor="middle">429</text>
+<text x="695.0" y="240.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#1B2433" text-anchor="middle">troppe richieste</text>
+<polyline points="330.0,284.0 330.0,307.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="330.0,322.0 323.5,307.0 336.5,307.0" fill="#3B4658"/>
+<rect x="336.9" y="289.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="356.0" y="308.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#1B2433" text-anchor="middle">no</text>
+<polygon points="330,322.0 500.0,384 330,446.0 160.0,384" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="330.0" y="378.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">≥ 5 tentativi falliti</text>
+<text x="330.0" y="402.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">su questa email?</text>
+<polyline points="500.0,384.0 585.0,384.0" fill="none" stroke="#D13B3B" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="600.0,384.0 585.0,390.5 585.0,377.5" fill="#D13B3B"/>
+<rect x="530.9" y="348.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="550.0" y="367.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#D13B3B" text-anchor="middle">sì</text>
+<rect x="600" y="340" width="190" height="88" rx="12" fill="#FDE7E7" stroke="#D13B3B" stroke-width="2.5"/>
+<text x="695.0" y="367.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#D13B3B" text-anchor="middle">429</text>
+<text x="695.0" y="391.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#1B2433" text-anchor="middle">account bloccato</text>
+<text x="695.0" y="414.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#1B2433" text-anchor="middle">per 15 minuti</text>
+<polyline points="330.0,446.0 330.0,471.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="330.0,486.0 323.5,471.0 336.5,471.0" fill="#3B4658"/>
+<rect x="336.9" y="452.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="356.0" y="471.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#1B2433" text-anchor="middle">no</text>
+<rect x="185.0" y="486" width="290" height="62" rx="12" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="330.0" y="512.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">verifica la password</text>
+<text x="330.0" y="535.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">hash argon2</text>
+<polyline points="330.0,548.0 330.0,563.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="330.0,578.0 323.5,563.0 336.5,563.0" fill="#3B4658"/>
+<polygon points="330,578.0 500.0,640 330,702.0 160.0,640" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="330.0" y="634.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">password</text>
+<text x="330.0" y="658.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">corretta?</text>
+<polyline points="500.0,640.0 585.0,640.0" fill="none" stroke="#D13B3B" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="600.0,640.0 585.0,646.5 585.0,633.5" fill="#D13B3B"/>
+<rect x="530.9" y="604.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="550.0" y="623.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#D13B3B" text-anchor="middle">no</text>
+<rect x="600" y="604" width="190" height="72" rx="12" fill="#FDE7E7" stroke="#D13B3B" stroke-width="2.5"/>
+<text x="695.0" y="635.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#D13B3B" text-anchor="middle">401 generico</text>
+<text x="695.0" y="658.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#1B2433" text-anchor="middle">+1 tentativo fallito</text>
+<polyline points="330.0,702.0 330.0,715.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="330.0,730.0 323.5,715.0 336.5,715.0" fill="#3B4658"/>
+<rect x="336.9" y="702.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="356.0" y="721.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#1B2433" text-anchor="middle">sì</text>
+<rect x="165.0" y="730" width="330" height="78" rx="39.0" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="330.0" y="764.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">emette i JWT</text>
+<text x="330.0" y="787.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">access 15 min · refresh 30 gg</text>
+<rect x="960.0" y="78" width="320" height="50" rx="25.0" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="1120.0" y="109.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">GET /api/… + Bearer JWT</text>
+<polyline points="1120.0,128.0 1120.0,145.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1120.0,160.0 1113.5,145.0 1126.5,145.0" fill="#3B4658"/>
+<polygon points="1120,160.0 1305.0,222 1120,284.0 935.0,222" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="1120.0" y="216.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">JWT valido?</text>
+<text x="1120.0" y="240.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">firma · scadenza · tipo</text>
+<polyline points="1305.0,222.0 1355.0,222.0" fill="none" stroke="#D13B3B" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1370.0,222.0 1355.0,228.5 1355.0,215.5" fill="#D13B3B"/>
+<rect x="1318.4" y="186.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="1337.5" y="205.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#D13B3B" text-anchor="middle">no</text>
+<rect x="1370" y="190" width="190" height="64" rx="12" fill="#FDE7E7" stroke="#D13B3B" stroke-width="2.5"/>
+<text x="1465.0" y="217.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#D13B3B" text-anchor="middle">401</text>
+<text x="1465.0" y="240.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#1B2433" text-anchor="middle">non autenticato</text>
+<polyline points="1120.0,284.0 1120.0,307.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1120.0,322.0 1113.5,307.0 1126.5,307.0" fill="#3B4658"/>
+<rect x="1126.9" y="289.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="1146.0" y="308.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#1B2433" text-anchor="middle">sì</text>
+<rect x="940.0" y="322" width="360" height="124" rx="12" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1120.0" y="356.2" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">ruolo effettivo sulla risorsa</text>
+<text x="1120.0" y="379.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">cache Redis (30 s), altrimenti</text>
+<text x="1120.0" y="402.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">Postgres: ruoli utente e team,</text>
+<text x="1120.0" y="426.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">risalendo la gerarchia</text>
+<polyline points="1120.0,446.0 1120.0,469.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1120.0,484.0 1113.5,469.0 1126.5,469.0" fill="#3B4658"/>
+<polygon points="1120,484.0 1305.0,546 1120,608.0 935.0,546" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="1120.0" y="540.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="600" fill="#1B2433" text-anchor="middle">ruolo ≥ richiesto?</text>
+<text x="1120.0" y="564.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">reader · editor · admin</text>
+<polyline points="1305.0,546.0 1355.0,546.0" fill="none" stroke="#D13B3B" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1370.0,546.0 1355.0,552.5 1355.0,539.5" fill="#D13B3B"/>
+<rect x="1318.4" y="510.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="1337.5" y="529.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#D13B3B" text-anchor="middle">no</text>
+<rect x="1370" y="514" width="190" height="64" rx="12" fill="#FDE7E7" stroke="#D13B3B" stroke-width="2.5"/>
+<text x="1465.0" y="541.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#D13B3B" text-anchor="middle">403</text>
+<text x="1465.0" y="564.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#1B2433" text-anchor="middle">vietato</text>
+<polyline points="1120.0,608.0 1120.0,631.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1120.0,646.0 1113.5,631.0 1126.5,631.0" fill="#3B4658"/>
+<rect x="1126.9" y="613.0" width="38.1" height="28" rx="14.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="1146.0" y="632.4" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#1B2433" text-anchor="middle">sì</text>
+<rect x="950.0" y="646" width="340" height="70" rx="12" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1120.0" y="676.3" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">esegue la richiesta</text>
+<text x="1120.0" y="699.9" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" fill="#566175" text-anchor="middle">ignora le risorse archiviate</text>
+<polyline points="1120.0,716.0 1120.0,729.0" fill="none" stroke="#3B4658" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1120.0,744.0 1113.5,729.0 1126.5,729.0" fill="#3B4658"/>
+<rect x="1000.0" y="744" width="240" height="56" rx="28.0" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1120.0" y="778.8" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="700" fill="#1B2433" text-anchor="middle">200 + dati</text>
+<rect x="40" y="828" width="1520" height="52" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="1.5"/>
+<text x="800.0" y="861.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" text-anchor="middle" xml:space="preserve"><tspan font-weight="700" fill="#1B2433">Verificato da test automatici: </tspan><tspan font-weight="400" fill="#1B2433">accesso a risorse altrui (IDOR) · JWT manomessi (alg:none, firma errata, scaduti) · SQL injection · mass assignment</tspan></text>
+</svg>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Da una modifica all&#x27;aggiornamento in tempo reale e ai job in coda">
+<title>Da una modifica all'aggiornamento in tempo reale e ai job in coda</title>
+<desc>L'utente A modifica una task: api-service verifica i permessi, scrive su PostgreSQL, pubblica un evento Pub/Sub e accoda un job, poi risponde 200. L'evento arriva a ws-gateway e all'utente B via WebSocket; il job viene eseguito da un worker, con retry e dead-letter in caso di errore.</desc>
+<rect width="1600" height="900" fill="#FFFFFF"/>
+<rect x="20" y="118" width="1560" height="302" rx="14" fill="#F2F7FF" stroke="#F2F7FF" stroke-width="0"/>
+<text x="36.0" y="144.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#2F6BE0" text-anchor="start" letter-spacing="1">1 · RICHIESTA</text>
+<rect x="20" y="434" width="1560" height="110" rx="14" fill="#EDF8F3" stroke="#EDF8F3" stroke-width="0"/>
+<text x="36.0" y="460.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#12906A" text-anchor="start" letter-spacing="1">2 · TEMPO REALE</text>
+<rect x="20" y="558" width="1560" height="158" rx="14" fill="#F6F0FF" stroke="#F6F0FF" stroke-width="0"/>
+<text x="36.0" y="584.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#7B4FD3" text-anchor="start" letter-spacing="1">3 · JOB IN CODA</text>
+<line x1="225" y1="102" x2="225" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<line x1="425" y1="102" x2="425" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<line x1="625" y1="102" x2="625" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<line x1="825" y1="102" x2="825" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<line x1="1025" y1="102" x2="1025" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<line x1="1225" y1="102" x2="1225" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<line x1="1425" y1="102" x2="1425" y2="722" stroke="#B8C2D0" stroke-width="2" stroke-dasharray="7 7"/>
+<rect x="133" y="26" width="184" height="76" rx="14" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="225.0" y="61.2" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">Utente A</text>
+<text x="225.0" y="83.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="400" fill="#566175" text-anchor="middle">modifica la task</text>
+<rect x="333" y="26" width="184" height="76" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="425.0" y="71.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">api-service</text>
+<rect x="533" y="26" width="184" height="76" rx="14" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5"/>
+<text x="625.0" y="71.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">PostgreSQL</text>
+<rect x="733" y="26" width="184" height="76" rx="14" fill="#FFF0D2" stroke="#C98410" stroke-width="2.5"/>
+<text x="825.0" y="61.2" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">Redis</text>
+<text x="825.0" y="83.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="400" fill="#566175" text-anchor="middle">Pub/Sub + Streams</text>
+<rect x="933" y="26" width="184" height="76" rx="14" fill="#F1E9FF" stroke="#7B4FD3" stroke-width="2.5"/>
+<text x="1025.0" y="71.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">worker-service</text>
+<rect x="1133" y="26" width="184" height="76" rx="14" fill="#DDF4EC" stroke="#12906A" stroke-width="2.5"/>
+<text x="1225.0" y="71.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">ws-gateway</text>
+<rect x="1333" y="26" width="184" height="76" rx="14" fill="#E7F0FF" stroke="#2F6BE0" stroke-width="2.5"/>
+<text x="1425.0" y="61.2" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" fill="#1B2433" text-anchor="middle">Utente B</text>
+<text x="1425.0" y="83.5" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="400" fill="#566175" text-anchor="middle">sta guardando</text>
+<polyline points="225.0,160.0 410.0,160.0" fill="none" stroke="#2F6BE0" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="425.0,160.0 410.0,166.5 410.0,153.5" fill="#2F6BE0"/>
+<rect x="258.96" y="129" width="168.08000000000004" height="25" rx="6" fill="#F2F7FF" stroke="#F2F7FF" stroke-width="0"/>
+<text x="343.0" y="149.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">PATCH /tasks/123</text>
+<circle cx="251" cy="160" r="14" fill="#2F6BE0" stroke="none" stroke-width="0"/>
+<text x="251.0" y="165.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<rect x="439" y="186" width="196" height="36" rx="10" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/>
+<circle cx="459" cy="204" r="12" fill="#2F6BE0" stroke="none" stroke-width="0"/>
+<text x="459.0" y="209.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="481.0" y="210.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="17" font-weight="500" fill="#566175" text-anchor="start">verifica il ruolo</text>
+<polyline points="425.0,256.0 610.0,256.0" fill="none" stroke="#2F6BE0" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="625.0,256.0 610.0,262.5 610.0,249.5" fill="#2F6BE0"/>
+<rect x="482.81" y="225" width="120.38000000000002" height="25" rx="6" fill="#F2F7FF" stroke="#F2F7FF" stroke-width="0"/>
+<text x="543.0" y="245.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">UPDATE task</text>
+<circle cx="451" cy="256" r="14" fill="#2F6BE0" stroke="none" stroke-width="0"/>
+<text x="451.0" y="261.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<polyline points="425.0,304.0 810.0,304.0" fill="none" stroke="#2F6BE0" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="825.0,304.0 810.0,310.5 810.0,297.5" fill="#2F6BE0"/>
+<rect x="544.47" y="273" width="197.06000000000003" height="25" rx="6" fill="#F2F7FF" stroke="#F2F7FF" stroke-width="0"/>
+<text x="643.0" y="293.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">PUBLISH evt:task:123</text>
+<circle cx="451" cy="304" r="14" fill="#2F6BE0" stroke="none" stroke-width="0"/>
+<text x="451.0" y="309.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
+<polyline points="425.0,352.0 810.0,352.0" fill="none" stroke="#2F6BE0" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="825.0,352.0 810.0,358.5 810.0,345.5" fill="#2F6BE0"/>
+<rect x="563.82" y="321" width="158.35999999999999" height="25" rx="6" fill="#F2F7FF" stroke="#F2F7FF" stroke-width="0"/>
+<text x="643.0" y="341.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">XADD stream:jobs</text>
+<circle cx="451" cy="352" r="14" fill="#2F6BE0" stroke="none" stroke-width="0"/>
+<text x="451.0" y="357.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">5</text>
+<polyline points="425.0,400.0 240.0,400.0" fill="none" stroke="#2F6BE0" stroke-width="2.6" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="225.0,400.0 240.0,393.5 240.0,406.5" fill="#2F6BE0"/>
+<rect x="271.02" y="369" width="71.96000000000001" height="25" rx="6" fill="#F2F7FF" stroke="#F2F7FF" stroke-width="0"/>
+<text x="307.0" y="389.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">200 OK</text>
+<circle cx="399" cy="400" r="14" fill="#2F6BE0" stroke="none" stroke-width="0"/>
+<text x="399.0" y="405.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">6</text>
+<polyline points="825.0,476.0 1210.0,476.0" fill="none" stroke="#12906A" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1225.0,476.0 1210.0,482.5 1210.0,469.5" fill="#12906A"/>
+<rect x="971.74" y="445" width="142.52000000000004" height="25" rx="6" fill="#EDF8F3" stroke="#EDF8F3" stroke-width="0"/>
+<text x="1043.0" y="465.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">evento Pub/Sub</text>
+<circle cx="851" cy="476" r="14" fill="#12906A" stroke="none" stroke-width="0"/>
+<text x="851.0" y="481.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">7</text>
+<polyline points="1225.0,524.0 1410.0,524.0" fill="none" stroke="#12906A" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1425.0,524.0 1410.0,530.5 1410.0,517.5" fill="#12906A"/>
+<rect x="1269.58" y="493" width="146.84" height="25" rx="6" fill="#EDF8F3" stroke="#EDF8F3" stroke-width="0"/>
+<text x="1343.0" y="513.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">push WebSocket</text>
+<circle cx="1251" cy="524" r="14" fill="#12906A" stroke="none" stroke-width="0"/>
+<text x="1251.0" y="529.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">8</text>
+<polyline points="825.0,596.0 1010.0,596.0" fill="none" stroke="#7B4FD3" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="1025.0,596.0 1010.0,602.5 1010.0,589.5" fill="#7B4FD3"/>
+<rect x="880.2" y="565" width="125.60000000000001" height="25" rx="6" fill="#F6F0FF" stroke="#F6F0FF" stroke-width="0"/>
+<text x="943.0" y="585.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">XREADGROUP</text>
+<circle cx="851" cy="596" r="14" fill="#7B4FD3" stroke="none" stroke-width="0"/>
+<text x="851.0" y="601.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">9</text>
+<polyline points="1025.0,644.0 640.0,644.0" fill="none" stroke="#7B4FD3" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="625.0,644.0 640.0,637.5 640.0,650.5" fill="#7B4FD3"/>
+<rect x="699.29" y="613" width="215.42000000000002" height="25" rx="6" fill="#F6F0FF" stroke="#F6F0FF" stroke-width="0"/>
+<text x="807.0" y="633.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">INSERT audit · notifiche</text>
+<circle cx="999" cy="644" r="14" fill="#7B4FD3" stroke="none" stroke-width="0"/>
+<text x="999.0" y="649.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">10</text>
+<polyline points="1025.0,692.0 840.0,692.0" fill="none" stroke="#7B4FD3" stroke-width="2.6" stroke-linejoin="round"/>
+<polygon points="825.0,692.0 840.0,685.5 840.0,698.5" fill="#7B4FD3"/>
+<rect x="828.36" y="661" width="157.28" height="25" rx="6" fill="#F6F0FF" stroke="#F6F0FF" stroke-width="0"/>
+<text x="907.0" y="681.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="500" fill="#1B2433" text-anchor="middle">PUBLISH notifica</text>
+<circle cx="999" cy="692" r="14" fill="#7B4FD3" stroke="none" stroke-width="0"/>
+<text x="999.0" y="697.6" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle">11</text>
+<rect x="20" y="738" width="720" height="142" rx="14" fill="#FFFFFF" stroke="#64748B" stroke-width="1.5"/>
+<text x="44.0" y="778.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#1B2433">I passi 4 e 5 avviano due percorsi indipendenti</tspan></text>
+<text x="44.0" y="812.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="start">l'utente A riceve 200 OK senza aspettare né il push (fase 2)</text>
+<text x="44.0" y="842.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="400" fill="#566175" text-anchor="start">né il job (fase 3); l'utente B vede la modifica subito.</text>
+<rect x="760" y="738" width="820" height="142" rx="14" fill="#FDE7E7" stroke="#D13B3B" stroke-width="2.5"/>
+<text x="784.0" y="776.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" text-anchor="start" xml:space="preserve"><tspan font-weight="700" fill="#D13B3B">Se il worker cade o l'handler fallisce</tspan></text>
+<text x="784.0" y="809.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#1B2433" text-anchor="start">nessun XACK: il job resta pending nel gruppo Redis</text>
+<text x="784.0" y="837.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#1B2433" text-anchor="start">dopo 30 s un altro worker lo riprende (XCLAIM) e riprova</text>
+<text x="784.0" y="865.0" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="400" fill="#1B2433" text-anchor="start">dopo 3 tentativi finisce in stream:jobs:dead (dead-letter)</text>
+</svg>
